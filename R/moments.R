@@ -2,10 +2,10 @@
 #'
 #' \code{moments} returns the sample moments of a data vector/matrix
 #'
-#' This function computes the sample moments for a data vector or matrix (sample mean, sample variance, sample skewness and sample kurtosis).
-#' For a vector input the function returns a single value for each sample moment of the data.  For a matrix input the function treats each column
-#' as a data vector and returns a matrix of values for the sample moments of each of these datasets.  The function can compute different types of
-#' skewness and kurtosis statistics using the \code{skew.type} and \code{kurt.type} inputs.
+#' This function computes the sample moments for a data vector, matrix or list (sample mean, sample variance, sample skewness and sample kurtosis).
+#' For a vector input the function returns a single value for each sample moment of the data.  For a matrix or list input the function treats each
+#' column/element as a data vector and returns a matrix of values for the sample moments of each of these datasets.  The function can compute
+#' different types of skewness and kurtosis statistics using the \code{skew.type}, \code{kurt.type} and \code{kurt.excess} inputs.
 #'
 #' @usage \code{moments}
 #' @param x A data vector/matrix/list
@@ -21,20 +21,33 @@ moments <- function(x, skew.type = NULL, kurt.type = NULL, kurt.excess = FALSE, 
   #Extract the data name
   DATANAME <- deparse(substitute(x))
 
-  #Check inputs
-  if (!is.numeric(x))                               { stop('Error: Input x should be numeric') }
+  #Check input x
+  if (is.list(x))  {
+    m <- length(x)
+    for (i in 1:m) {
+      if (!is.numeric(x[[i]]))                      { stop(paste0('Error: Element ', i, ' of input list x should be numeric')) } } }
+  if (!is.list(x)) {
+    if (!is.numeric(x))                             { stop('Error: Input x should be numeric') } }
+
+  #Check inputs skew.type and kurt.type
   if (missing(skew.type)) { skew.type <- 'Moment' }
   TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
   if (!(skew.type %in% TYPES))                      { stop('Error: Input skew.type not recognised') }
   if (missing(kurt.type)) { kurt.type <- 'Moment' }
   TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
   if (!(kurt.type %in% TYPES))                      { stop('Error: Input kurt.type not recognised') }
+
+  #Check input kurt.excess
   if (!is.vector(kurt.excess))                      { stop('Error: Input kurt.excess should be a single logical value') }
   if (!is.logical(kurt.excess))                     { stop('Error: Input kurt.excess should be a single logical value') }
   if (length(kurt.excess) != 1)                     { stop('Error: Input kurt.excess should be a single logical value') }
+
+  #Check input na.rm
   if (!is.vector(na.rm))                            { stop('Error: Input na.rm should be a single logical value') }
   if (!is.logical(na.rm))                           { stop('Error: Input na.rm should be a single logical value') }
   if (length(na.rm) != 1)                           { stop('Error: Input na.rm should be a single logical value') }
+
+  #Check input include.sd
   if (!is.vector(include.sd))                       { stop('Error: Input include.sd should be a single logical value') }
   if (!is.logical(include.sd))                      { stop('Error: Input include.sd should be a single logical value') }
   if (length(include.sd) != 1)                      { stop('Error: Input include.sd should be a single logical value') }
@@ -58,23 +71,36 @@ moments <- function(x, skew.type = NULL, kurt.type = NULL, kurt.excess = FALSE, 
       C <- -3*kurt.excess*(n-1)^2/((n-2)*(n-3)) }
     C }
 
+  #Convert data to list
+  if (is.list(x)) {
+    DATA  <- x
+    NAMES <- names(x) }
+  if ((!is.list(x))&(is.vector(x))) {
+    DATA  <- list(DATANAME = x)
+    NAMES <- DATANAME }
+  if ((!is.list(x))&(is.matrix(x))) {
+    DATA  <- lapply(seq_len(ncol(x)), function(i) x[,i])
+    NAMES <- colnames(x)
+    names(DATA) <- NAMES }
+
   #Create output data frame
-  if (is.vector(x)) { x <- as.matrix(x, ncols = 1) }
-  m <- ncol(x)
+  m <- length(x)
   if (include.sd) {
     OUT <- data.frame(n = rep(0, m), sample.mean = rep(0, m), sample.sd = rep(0, m), sample.var = rep(0, m),
                       sample.skew = rep(0, m), sample.kurt = rep(0, m), NAs = rep(0, m)) } else {
     OUT <- data.frame(n = rep(0, m), sample.mean = rep(0, m), sample.var = rep(0, m),
                       sample.skew = rep(0, m), sample.kurt = rep(0, m), NAs = rep(0, m)) }
-  if (m == 1) { rownames(OUT) <- DATANAME } else { rownames(OUT) <- paste0(DATANAME, sprintf('[%s]', 1:m)) }
+  if (m == 1) { rownames(OUT) <- DATANAME } else {
+    if (is.null(NAMES)) { rownames(OUT) <- paste0(DATANAME, sprintf('[%s]', 1:m)) } else { rownames(OUT) <- NAMES } }
+  class(OUT) <- c('moments', 'data.frame')
   attr(OUT, 'skew.type')   <- skew.type
   attr(OUT, 'kurt.type')   <- kurt.type
   attr(OUT, 'kurt.excess') <- kurt.excess
 
   #Compute the sample moments
   for (i in 1:m) {
-    NAS <- sum(is.na(x[,i]))
-    if (na.rm) { xx  <- x[!is.na(x[,i]),i] } else { xx <- x[,i] }
+    NAS <- sum(is.na(DATA[[i]]))
+    if (na.rm) { xx <- DATA[[i]][!is.na(DATA[[i]])] } else { xx <- DATA[[i]] }
     n           <- length(xx)
     sample.mean <- mean(xx)
     SS          <- sum((xx - sample.mean)^2)
@@ -91,7 +117,7 @@ moments <- function(x, skew.type = NULL, kurt.type = NULL, kurt.excess = FALSE, 
     OUT$sample.var[i]  <- sample.var
     OUT$sample.skew[i] <- sample.skew
     OUT$sample.kurt[i] <- sample.kurt
-    OUT$NAs            <- NAS }
+    OUT$NAs[i]         <- NAS }
 
   #Give output
   OUT }
