@@ -1,12 +1,12 @@
-Package: Miscellaneous
+Package: utilities
 Type: Package
-Title: Contains miscellaneous functions
+Title: Contains data utility functions
 Version: 0.1.0
 Date: 12 November 2020
 Authors@R: person("Ben", "O'Neill", email = "ben.oneill@hotmail.com", role = c("aut", "cre")),
 Author: Ben O'Neill [aut, cre]
 Maintainer: Ben O'Neill [aut, cre]
-Description: This package contains miscellaneous functions for use in probability and statistics
+Description: This package contains data utility functions for use in probability and statistics
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
