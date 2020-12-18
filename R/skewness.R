@@ -14,21 +14,32 @@
 
 skewness <- function(x, skew.type = NULL, na.rm = FALSE) {
 
-  #Check inputs
+  #Check input x
   if ((!is.vector(x))&(!is.matrix(x)))              { stop('Error: Input x should be a data vector or matrix') }
   if (!is.numeric(x))                               { stop('Error: Input x should be numeric') }
-  if (missing(skew.type)) { skew.type <- 'Moment' }
-  TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
+
+  #Check input skew.type
+  #Types are as follows:
+  #  b = Moment (Minitab)
+  #  g = Fisher Pearson (moments package in R, STATA)
+  #  G = Adjusted Fisher Pearson (Excel, SPSS, SAS)
+  if (missing(skew.type)) { skew.type <- 'Fisher Pearson' }
+  TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'b', 'g', 'G', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
   if (!(skew.type %in% TYPES))                      { stop('Error: Input skew.type not recognised') }
+
+  #Check input na.rm
   if (!is.vector(na.rm))                            { stop('Error: Input na.rm should be a single logical value') }
   if (!is.logical(na.rm))                           { stop('Error: Input na.rm should be a single logical value') }
   if (length(na.rm) != 1)                           { stop('Error: Input na.rm should be a single logical value') }
 
   #Set skew adjustment
+  #Default type with no adjustment is 'Fisher Pearson'
   skew.adj <- function(n) {
     A <- 1
-    if (skew.type %in% c('Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS')) { A <- (n^2)/((n-1)*(n-2)) }
-    if (skew.type %in% c('Fisher Pearson', 'Stata')) { A <- (n/(n-1))^(3/2) }
+    if (skew.type %in% c('Moment', 'b', 'Minitab')) {
+      A <- (n/(n-1))^(3/2) }
+    if (skew.type %in% c('Adjusted Fisher Pearson', 'G', 'Excel', 'SPSS', 'SAS')) {
+      A <- (n^2)/((n-1)*(n-2)) }
     A }
 
   #Compute the sample skewness

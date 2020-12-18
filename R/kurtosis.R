@@ -18,29 +18,41 @@ kurtosis <- function(x, kurt.type = NULL, kurt.excess = FALSE, na.rm = FALSE) {
   #Check inputs
   if ((!is.vector(x))&(!is.matrix(x)))              { stop('Error: Input x should be a data vector or matrix') }
   if (!is.numeric(x))                               { stop('Error: Input x should be numeric') }
-  if (missing(kurt.type)) { kurt.type <- 'Moment' }
-  TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
+
+  #Check input kurt.type
+  #Types are as follows:
+  #  b = Moment (Minitab)
+  #  g = Fisher Pearson (moments package in R, STATA)
+  #  G = Adjusted Fisher Pearson (Excel, SPSS, SAS)
+  if (missing(kurt.type)) { kurt.type <- 'Fisher Pearson' }
+  TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'b', 'g', 'G', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
   if (!(kurt.type %in% TYPES))                      { stop('Error: Input kurt.type not recognised') }
+
+  #Check input kurt.excess
   if (!is.vector(kurt.excess))                      { stop('Error: Input kurt.excess should be a single logical value') }
   if (!is.logical(kurt.excess))                     { stop('Error: Input kurt.excess should be a single logical value') }
   if (length(kurt.excess) != 1)                     { stop('Error: Input kurt.excess should be a single logical value') }
+
+  #Check input na.rm
   if (!is.vector(na.rm))                            { stop('Error: Input na.rm should be a single logical value') }
   if (!is.logical(na.rm))                           { stop('Error: Input na.rm should be a single logical value') }
   if (length(na.rm) != 1)                           { stop('Error: Input na.rm should be a single logical value') }
 
   #Set kurt adjustment function
+  #Default type with no adjustment is 'Fisher Pearson'
   kurt.adj <- function(n) {
     B <- 1
-    if (kurt.type %in% c('Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS')) {
-      B <- (n+1)*n^2/((n-1)*(n-2)*(n-3)) }
-    if (kurt.type %in% c('Fisher Pearson', 'Stata')) {
+    if (kurt.type %in% c('Moment', 'b', 'Minitab')) {
       B <- (n/(n-1))^2 }
+    if (kurt.type %in% c('Adjusted Fisher Pearson', 'G', 'Excel', 'SPSS', 'SAS')) {
+      B <- (n+1)*n^2/((n-1)*(n-2)*(n-3)) }
     B }
 
   #Set excess adjustment function
+  #Default type with no adjustment is 'Fisher Pearson'
   excess.adj <- function(n) {
     C <- -3*kurt.excess
-    if (kurt.type %in% c('Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS')) {
+    if (kurt.type %in% c('Adjusted Fisher Pearson', 'G', 'Excel', 'SPSS', 'SAS')) {
       C <- -3*kurt.excess*(n-1)^2/((n-2)*(n-3)) }
     C }
 
