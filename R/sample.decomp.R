@@ -14,6 +14,7 @@
 #' the pooled sample.
 #'
 #' @usage \code{moment.decomp}
+#' @param moments A data-frame of moments (an object of class 'moments')
 #' @param n A vector of sample sizes
 #' @param sample.mean A vector of sample means
 #' @param sample.sd A vector of sample standard deviations
@@ -28,11 +29,27 @@
 #' @param include.sd Logical value; if \code{TRUE} the output includes a column for the sample standard deviation (if needed)
 #' @return A data-frame of all groups showing their sample sizes and sample moments
 
-sample.decomp <- function(n,
+sample.decomp <- function(moments = NULL, n = NULL,
                           sample.mean = NULL, sample.sd = NULL, sample.var = NULL, sample.skew = NULL, sample.kurt = NULL,
-                          names = NULL, pooled = NULL, skew.type = 'Moment', kurt.type = 'Moment', kurt.excess = TRUE, include.sd = FALSE) {
+                          names = NULL, pooled = NULL, skew.type = NULL, kurt.type = NULL, kurt.excess = NULL, include.sd = FALSE) {
+
+  #Check input moments
+  if (!is.null(moments)) {
+    if (!('moments' %in% class(moments)))           { stop('Error: Input moments must be a moments object') }
+    if (is.null(n))           { n           <- moments$n           } else { stop('Error: Input moments or descriptive statistics but not both') }
+    if (is.null(sample.mean)) { sample.mean <- moments$sample.mean } else { stop('Error: Input moments or descriptive statistics but not both') }
+    if ('sample.sd' %in% colnames(moments)) {
+    if (is.null(sample.sd))   { sample.sd   <- moments$sample.sd   } else { stop('Error: Input moments or descriptive statistics but not both') } }
+    if (is.null(sample.var))  { sample.var  <- moments$sample.var  } else { stop('Error: Input moments or descriptive statistics but not both') }
+    if (is.null(sample.skew)) { sample.skew <- moments$sample.skew } else { stop('Error: Input moments or descriptive statistics but not both') }
+    if (is.null(sample.kurt)) { sample.kurt <- moments$sample.kurt } else { stop('Error: Input moments or descriptive statistics but not both') }
+    if (is.null(skew.type))   { skew.type   <- attributes(moments)$skew.type   } else { stop('Error: Input moments or skew.type but not both') }
+    if (is.null(kurt.type))   { kurt.type   <- attributes(moments)$kurt.type   } else { stop('Error: Input moments or kurt.type but not both') }
+    if (is.null(kurt.excess)) { kurt.excess <- attributes(moments)$kurt.excess } else { stop('Error: Input moments or kurt.excess but not both') }
+    if (is.null(names))       { names       <- rownames(moments) } }
 
   #Check input n
+  if (is.null(n))                                   { stop('Error: You must input n') }
   if (!is.vector(n))                                { stop('Error: Input n should be a vector of positive integers') }
   if (!is.numeric(n))                               { stop('Error: Input n should be a vector of positive integers') }
   if (any(as.integer(n) != n))                      { stop('Error: Input n should be a vector of positive integers') }
@@ -108,20 +125,50 @@ sample.decomp <- function(n,
     if (n[pooled] <= sum(n[-pooled]))               { stop('Error: The size of the pooled group should be larger than the total size of the other groups') } }
 
   #Check inputs skew.type, kurt.type and kurt.excess
+  #Types are as follows:
+  #  b = Moment (Minitab)
+  #  g = Fisher Pearson (moments package in R, STATA)
+  #  G = Adjusted Fisher Pearson (Excel, SPSS, SAS)
   if (MAXMOM >= 3) {
-    TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
+    TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'b', 'g', 'G', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
+    if (is.null(skew.type)) { skew.type <- 'Fisher Pearson' }
     if (!(skew.type %in% TYPES))                    { stop('Error: Input skew.type not recognised') } }
   if (MAXMOM >= 4) {
-    TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
-    if (!(kurt.type %in% TYPES))                    { stop('Error: Input kurt.type not recognised') } }
-  if (!is.vector(kurt.excess))                      { stop('Error: Input kurt.excess should be a single logical value') }
-  if (!is.logical(kurt.excess))                     { stop('Error: Input kurt.excess should be a single logical value') }
-  if (length(kurt.excess) != 1)                     { stop('Error: Input kurt.excess should be a single logical value') }
+    if (is.null(kurt.type)) { kurt.type <- 'Fisher Pearson' }
+    if (is.null(kurt.excess)) { kurt.excess <- FALSE }
+    if (!(kurt.type %in% TYPES))                    { stop('Error: Input kurt.type not recognised') }
+    if (!is.vector(kurt.excess))                    { stop('Error: Input kurt.excess should be a single logical value') }
+    if (!is.logical(kurt.excess))                   { stop('Error: Input kurt.excess should be a single logical value') }
+    if (length(kurt.excess) != 1)                   { stop('Error: Input kurt.excess should be a single logical value') } }
 
   #Check input include.sd
   if (!is.vector(include.sd))                       { stop('Error: Input include.sd should be a single logical value') }
   if (!is.logical(include.sd))                      { stop('Error: Input include.sd should be a single logical value') }
   if (length(include.sd) != 1)                      { stop('Error: Input include.sd should be a single logical value') }
+
+  #Set skew and kurt adjustments
+  #Default type with no adjustment is 'Fisher Pearson'
+  if (MAXMOM >= 3) {
+    skew.adj <- function(n) {
+      A <- 1
+      if (skew.type %in% c('Moment', 'b', 'Minitab')) {
+        A <- ((n-1)/n)^(3/2) }
+      if (skew.type %in% c('Adjusted Fisher Pearson', 'G', 'Excel', 'SPSS', 'SAS')) {
+        A <- sqrt(n*(n-1))/(n-2) }
+      A } }
+  if (MAXMOM >= 4) {
+    kurt.adj <- function(n) {
+      B <- 1
+      if (kurt.type %in% c('Moment', 'b', 'Minitab')) {
+        B <- ((n-1)/n)^2 }
+      if (kurt.type %in% c('Adjusted Fisher Pearson', 'G', 'Excel', 'SPSS', 'SAS')) {
+        B <- (n+1)*(n-1)/((n-2)*(n-3)) }
+      B }
+    excess.adj <- function(n) {
+      C <- -3*kurt.excess
+      if (kurt.type %in% c('Adjusted Fisher Pearson', 'G', 'Excel', 'SPSS', 'SAS')) {
+        C <- -3*kurt.excess*(n-1)^2/((n-2)*(n-3)) }
+      C } }
 
   #Set output data frame when pooled is NULL
   #In this case all the groups are sample groups yet to be pooled
@@ -149,17 +196,16 @@ sample.decomp <- function(n,
 
     #Compute the pooled sample skewness
     if (MAXMOM >= 3) {
-      SC        <- n*sample.skew*(sample.var^(3/2))/skew.adj(n, skew.type)
+      SC        <- sample.skew*(SS^(3/2))/(skew.adj(n)*sqrt(n))
       pool.SC   <- sum(SC) + 3*sum(SS*deviation) + sum(n*deviation^3)
-      pool.skew <- skew.adj(pool.n, skew.type)*pool.SC/(pool.n*pool.var^(3/2))
+      pool.skew <- skew.adj(pool.n)*sqrt(pool.n)*pool.SC/pool.SS^(3/2)
       OUT$sample.skew <- c(sample.skew, pool.skew) }
 
     #Compute the pooled sample kurtosis
     if (MAXMOM >= 4) {
-      SQ        <- n*(sample.kurt - excess.adj(n, kurt.type, kurt.excess))*((sample.var)^2)*((n-1)^2/n^2)/kurt.adj(n, kurt.type)
+      SQ        <- (sample.kurt - excess.adj(n))*SS^2/(kurt.adj(n)*n)
       pool.SQ   <- sum(SQ) + 4*sum(SC*deviation) + 6*sum(SS*deviation^2) + sum(n*deviation^4)
-      pool.kurt <- kurt.adj(pool.n, kurt.type)*pool.SQ/(pool.n*(pool.var^2)*((pool.n-1)^2/pool.n^2)) +
-                   excess.adj(pool.n, kurt.type, kurt.excess)
+      pool.kurt <- kurt.adj(pool.n)*pool.n*pool.SQ/pool.SS^2 + excess.adj(pool.n)
       OUT$sample.kurt <- c(sample.kurt, pool.kurt) } }
 
   #Set output data frame when pooled is specified
@@ -195,26 +241,23 @@ sample.decomp <- function(n,
 
     #Compute the other sample skewness
     if (MAXMOM >= 3) {
-      SC        <- n[-pooled]*sample.skew[-pooled]*(sample.var[-pooled]^(3/2))/skew.adj(n[-pooled], skew.type)
+      SC        <- sample.skew[-pooled]*SS^(3/2)/(skew.adj(n[-pooled])*sqrt(n[-pooled]))
       part.SC   <- sum(SC) + 3*sum(SS*deviation) + sum(n[-pooled]*deviation^3)
-      pool.SC   <- pool.n*sample.skew[pooled]*(sample.var[pooled]^(3/2))/skew.adj(pool.n, skew.type)
+      pool.SC   <- sample.skew[pooled]*pool.SS^(3/2)/(skew.adj(pool.n)*sqrt(pool.n))
       other.SC  <- pool.SC - part.SC - (3*(pool.n*part.SS - part.n*pool.SS)/(other.n))*(part.mean - pool.mean) -
                    ((pool.n*part.n)*(pool.n + part.n)/(other.n)^2)*(part.mean - pool.mean)^3
-      other.skew <- skew.adj(other.n, skew.type)*other.SC/(other.n*other.var^(3/2))
+      other.skew <- skew.adj(other.n)*sqrt(other.n)*other.SC/other.SS^(3/2)
       OUT$sample.skew <- c(sample.skew, other.skew) }
 
     #Compute the other sample kurtosis
     if (MAXMOM >= 4) {
-      SQ        <- n[-pooled]*(sample.kurt[-pooled] - excess.adj(n[-pooled], kurt.type, kurt.excess))*
-                   ((sample.var[-pooled])^2)*((n[-pooled]-1)^2/n[-pooled]^2)/kurt.adj(n[-pooled], kurt.type)
+      SQ        <- (sample.kurt[-pooled] - excess.adj(n[-pooled]))*SS^2/(kurt.adj(n[-pooled])*n[-pooled])
       part.SQ   <- sum(SQ) + 4*sum(SC*deviation) + 6*sum(SS*deviation^2) + sum(n[-pooled]*deviation^4)
-      pool.SQ   <- pool.n*(sample.kurt[pooled] - excess.adj(pool.n, kurt.type, kurt.excess))*
-                   ((sample.var[pooled])^2)*((pool.n-1)^2/pool.n^2)/kurt.adj(pool.n, kurt.type)
+      pool.SQ   <- (sample.kurt[pooled] - excess.adj(pool.n))*pool.SS^2/(kurt.adj(pool.n)*pool.n)
       other.SQ  <- pool.SQ - part.SQ - 4*((pool.n*other.SC - other.n*pool.SC)/(pool.n - other.n))*(other.mean - pool.mean) -
                    6*((pool.n^2*other.SS - other.n^2*pool.SS)/(pool.n - other.n)^2)*(other.mean - pool.mean)^2 -
                    ((other.n*pool.n^3 + other.n^2*pool.n^2 + other.n^3*pool.n)/(pool.n - other.n)^3)*(other.mean - pool.mean)^4
-      other.kurt <- kurt.adj(other.n, kurt.type)*other.SQ/(other.n*(other.var^2)*((other.n-1)^2/other.n^2)) +
-                    excess.adj(other.n, kurt.type, kurt.excess)
+      other.kurt <- kurt.adj(other.n)*other.n*other.SQ/other.SS^2 + excess.adj(other.n)
       OUT$sample.kurt <- c(sample.kurt, other.kurt) }
 
     #Put pooled group at the end
@@ -223,43 +266,10 @@ sample.decomp <- function(n,
     ORDER[N+1] <- pooled
     OUT <- OUT[ORDER, ] }
 
+  #Add attributes
+  attr(OUT, 'skew.type')   <- skew.type
+  attr(OUT, 'kurt.type')   <- kurt.type
+  attr(OUT, 'kurt.excess') <- kurt.excess
+
   #Return output
   OUT }
-
-
-
-
-skew.adj <- function(n, skew.type) {
-  NN <- length(n)
-  AA <- rep(0, NN)
-  for (i in 1:NN) {
-    A <- 1
-    if (skew.type %in% c('Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS')) {
-      A <- (n[i]^2)/((n[i]-1)*(n[i]-2)) }
-    if (skew.type %in% c('Fisher Pearson', 'Stata')) {
-      A <- (n[i]/(n[i]-1))^(3/2) }
-    AA[i] <- A }
-  AA }
-
-kurt.adj <- function(n, kurt.type) {
-  NN <- length(n)
-  BB <- rep(0, NN)
-  for (i in 1:NN) {
-    B <- 1
-    if (kurt.type %in% c('Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS')) {
-      B <- (n[i]+1)*n[i]^2/((n[i]-1)*(n[i]-2)*(n[i]-3)) }
-    if (kurt.type %in% c('Fisher Pearson', 'Stata')) {
-      B <- (n[i]/(n[i]-1))^2 }
-    BB[i] <- B }
-  BB }
-
-excess.adj <- function(n, kurt.type, kurt.excess) {
-  NN  <- length(n)
-  CC  <- rep(0, NN)
-  for (i in 1:NN) {
-    C <- -3*kurt.excess
-    if (kurt.type %in% c('Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS')) {
-      C <- -3*kurt.excess*(n[i]-1)^2/((n[i]-2)*(n[i]-3)) }
-    CC[i] <- C }
-  CC }
-

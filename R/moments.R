@@ -5,7 +5,8 @@
 #' This function computes the sample moments for a data vector, matrix or list (sample mean, sample variance, sample skewness and sample kurtosis).
 #' For a vector input the function returns a single value for each sample moment of the data.  For a matrix or list input the function treats each
 #' column/element as a data vector and returns a matrix of values for the sample moments of each of these datasets.  The function can compute
-#' different types of skewness and kurtosis statistics using the \code{skew.type}, \code{kurt.type} and \code{kurt.excess} inputs.
+#' different types of skewness and kurtosis statistics using the \code{skew.type}, \code{kurt.type} and \code{kurt.excess} inputs.  (For details
+#' on the different types of skewness and kurtosis statistics, see Joanes and Gill 1998.)
 #'
 #' @usage \code{moments}
 #' @param x A data vector/matrix/list
@@ -30,11 +31,14 @@ moments <- function(x, skew.type = NULL, kurt.type = NULL, kurt.excess = FALSE, 
     if (!is.numeric(x))                             { stop('Error: Input x should be numeric') } }
 
   #Check inputs skew.type and kurt.type
-  if (missing(skew.type)) { skew.type <- 'Moment' }
-  TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
+  #Types are as follows:
+  #  b = Moment (Minitab)
+  #  g = Fisher Pearson (moments package in R, STATA)
+  #  G = Adjusted Fisher Pearson (Excel, SPSS, SAS)
+  TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'b', 'g', 'G', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
+  if (missing(skew.type)) { skew.type <- 'Fisher Pearson' }
+  if (missing(kurt.type)) { kurt.type <- 'Fisher Pearson' }
   if (!(skew.type %in% TYPES))                      { stop('Error: Input skew.type not recognised') }
-  if (missing(kurt.type)) { kurt.type <- 'Moment' }
-  TYPES <- c('Moment', 'Fisher Pearson', 'Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS', 'Stata')
   if (!(kurt.type %in% TYPES))                      { stop('Error: Input kurt.type not recognised') }
 
   #Check input kurt.excess
@@ -53,21 +57,24 @@ moments <- function(x, skew.type = NULL, kurt.type = NULL, kurt.excess = FALSE, 
   if (length(include.sd) != 1)                      { stop('Error: Input include.sd should be a single logical value') }
 
   #Set skew and kurt adjustments
+  #Default type with no adjustment is 'Fisher Pearson'
   skew.adj <- function(n) {
     A <- 1
-    if (skew.type %in% c('Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS')) { A <- (n^2)/((n-1)*(n-2)) }
-    if (skew.type %in% c('Fisher Pearson', 'Stata')) { A <- (n/(n-1))^(3/2) }
+    if (skew.type %in% c('Moment', 'b', 'Minitab')) {
+      A <- (n/(n-1))^(3/2) }
+    if (skew.type %in% c('Adjusted Fisher Pearson', 'G', 'Excel', 'SPSS', 'SAS')) {
+      A <- (n^2)/((n-1)*(n-2)) }
     A }
   kurt.adj <- function(n) {
     B <- 1
-    if (kurt.type %in% c('Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS')) {
-      B <- (n+1)*n^2/((n-1)*(n-2)*(n-3)) }
-    if (kurt.type %in% c('Fisher Pearson', 'Stata')) {
+    if (kurt.type %in% c('Moment', 'b', 'Minitab')) {
       B <- (n/(n-1))^2 }
+    if (kurt.type %in% c('Adjusted Fisher Pearson', 'G', 'Excel', 'SPSS', 'SAS')) {
+      B <- (n+1)*n^2/((n-1)*(n-2)*(n-3)) }
     B }
   excess.adj <- function(n) {
     C <- -3*kurt.excess
-    if (kurt.type %in% c('Adjusted Fisher Pearson', 'Minitab', 'Excel', 'SPSS', 'SAS')) {
+    if (kurt.type %in% c('Adjusted Fisher Pearson', 'G', 'Excel', 'SPSS', 'SAS')) {
       C <- -3*kurt.excess*(n-1)^2/((n-2)*(n-3)) }
     C }
 
@@ -76,15 +83,16 @@ moments <- function(x, skew.type = NULL, kurt.type = NULL, kurt.excess = FALSE, 
     DATA  <- x
     NAMES <- names(x) }
   if ((!is.list(x))&(is.vector(x))) {
-    DATA  <- list(DATANAME = x)
-    NAMES <- DATANAME }
+    DATA  <- lapply(1, function(i) x)
+    NAMES <- DATANAME
+    names(DATA) <- NAMES }
   if ((!is.list(x))&(is.matrix(x))) {
     DATA  <- lapply(seq_len(ncol(x)), function(i) x[,i])
     NAMES <- colnames(x)
     names(DATA) <- NAMES }
 
   #Create output data frame
-  m <- length(x)
+  m <- length(DATA)
   if (include.sd) {
     OUT <- data.frame(n = rep(0, m), sample.mean = rep(0, m), sample.sd = rep(0, m), sample.var = rep(0, m),
                       sample.skew = rep(0, m), sample.kurt = rep(0, m), NAs = rep(0, m)) } else {
