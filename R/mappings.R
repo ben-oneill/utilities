@@ -35,12 +35,26 @@ mappings <- function(data, na.rm = TRUE, plot = TRUE) {
   if (GGDAG)   { library(ggdag)  }
   if (GGPLOT2) { library(ggplot2) }
 
-  #Extract uniqueness relations and create output list
-  UU    <- uniqueness(data, na.rm = na.rm)
-  NAMES <- colnames(UU)
-  n     <- ncol(UU)
+  #Examine uniqueness relations and create output list
+  NAMES <- colnames(data)
+  n     <- length(NAMES)
+  UU    <- array(NA, dim = c(n,n))
+  rownames(UU) <- NAMES
+  colnames(UU) <- NAMES
+  for (i in 1:n) {
+  for (j in 1:n) {
+    II <- data[,i]
+    JJ <- data[,j]
+    if (na.rm) { REMOVE <- which(is.na(II)|is.na(JJ))
+    if (length(REMOVE) > 0) { II <- II[-REMOVE]; JJ <- JJ[-REMOVE] } }
+    LU <- TRUE
+    while ((length(II) > 0) & LU) {
+      IND <- which(II == II[1]);
+      if (length(unique(JJ[IND])) > 1) { LU <- FALSE }
+      II <- II[-IND]; JJ <- JJ[-IND] }
+    UU[i,j] <- LU } }
+  OUT <- list(uniqueness = UU)
   for (i in 1:n) { UU[i,i] <- FALSE }
-  OUT <- list()
 
   #Create vector of mappings
   MAP <- character(0)
@@ -50,13 +64,13 @@ mappings <- function(data, na.rm = TRUE, plot = TRUE) {
     if (UU[i,j]) {
       MAP[k+1] <- paste0(NAMES[i], " \U2192 ", NAMES[j])
       k <- k+1 } } }
-  OUT$Mappings <- MAP
+  OUT$mappings <- MAP
 
   #Compute redundancies
   RED <- rep(FALSE, n)
   for (i in 1:n) { RED[i] <- (sum(UU[,i]) > 0) }
-  OUT$Redundant     <- colnames(UU)[RED]
-  OUT$Non_Redundant <- colnames(UU)[!RED]
+  OUT$redundant    <- colnames(UU)[RED]
+  OUT$nonredundant <- colnames(UU)[!RED]
 
   #Create directed acyclic graph (DAG)
   if (GGDAG) {
@@ -71,7 +85,7 @@ mappings <- function(data, na.rm = TRUE, plot = TRUE) {
     DAG <- ggdag::tidy_dagitty(DAG)
     nnn <- DAG$data$name
     IND <- rep(FALSE, length(nnn))
-    for (i in 1:length(nnn)) { IND[i] <- (nnn[i] %in% OUT$Redundant) }
+    for (i in 1:length(nnn)) { IND[i] <- (nnn[i] %in% OUT$redundant) }
     DAG$data$Redundant      <- 'Non Redundant Variable'
     DAG$data$Redundant[IND] <- 'Redundant Variable'
     OUT$DAG <- DAG }
@@ -84,41 +98,13 @@ mappings <- function(data, na.rm = TRUE, plot = TRUE) {
             ggdag::geom_dag_edges() +
             ggdag::geom_dag_text(colour = 'white') +
             ggdag::theme_dag() +
-            ggplot2::theme(legend.position = 'none')
+            ggplot2::theme(legend.position = 'none') +
+            ggplot2::theme(plot.title    = ggplot2::element_text(hjust = 0.5, size = 14, face = 'bold'),
+                           plot.subtitle = ggplot2::element_text(hjust = 0.5, face = 'bold')) +
+            ggplot2::ggtitle('Variable Mappings Plot') +
+            ggplot2::labs(subtitle = '(redundant variables are shown in grey)')
 
     print(PLOT) }
 
   #Return output
   OUT }
-
-
-uniqueness <- function(data, na.rm = TRUE) {
-
-  #Check input data
-  DATA <- as.data.frame(data)
-  if (!is.data.frame(data)) { stop('Error: Input is not a data frame') }
-
-  #Generate output matrix
-  NAMES <- colnames(data)
-  n     <- length(NAMES)
-  OUT   <- array(NA, dim = c(n,n))
-  rownames(OUT) <- NAMES
-  colnames(OUT) <- NAMES
-
-  #Check mappings
-  for (i in 1:n) {
-  for (j in 1:n) {
-    II <- data[,i]
-    JJ <- data[,j]
-    if (na.rm) { REMOVE <- which(is.na(II)|is.na(JJ))
-    if (length(REMOVE) > 0) { II <- II[-REMOVE]; JJ <- JJ[-REMOVE] } }
-    LU <- TRUE
-    while ((length(II) > 0) & LU) {
-      IND <- which(II == II[1]);
-      if (length(unique(JJ[IND])) > 1) { LU <- FALSE }
-      II <- II[-IND]; JJ <- JJ[-IND] }
-      OUT[i,j] <- LU } }
-
-  #Return output
-  OUT }
-
