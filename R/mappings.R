@@ -110,7 +110,7 @@ print.data.mappings <- function(object) {
     for (i in 1:n0) { cat('    ', RED[i], '\n') } }
 
   #Print the nonredundant variables
-  if (n0 > 0) {
+  if (n1 > 0) {
     cat('\n', 'Non-redundant variables: \n \n')
     for (i in 1:n1) { cat('    ', NRED[i], '\n') }
     cat('\n') } }
