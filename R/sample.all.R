@@ -35,13 +35,25 @@ sample.all <- function(n, size = n, replace = FALSE, prob = NULL) {
   if (length(replace) != 1)                            { stop('Error: Input replace should be a logical value') }
 
   #Check input prob
+  PROB <- FALSE
   if (!is.null(prob)) {
+    PROB <- TRUE
     if (!is.vector(prob))                              { stop('Error: Input prob should be a probability vector with length n') }
     if (length(prob) != n)                             { stop('Error: Input prob should be a probability vector with length n') }
     if (min(prob) < 0)                                 { stop('Error: Input prob should be a probability vector with length n') }
-    PROB <- TRUE
     SUM  <- sum(prob)
     if (SUM != 1) { prob <- prob/SUM } }
+
+  #Check matrix size and give warnings
+  if (replace)  { ELEMENTS <- (n^size)*(size + PROB)  }
+  if (!replace) { ELEMENTS <- (factorial(n)/factorial(n-min(n, size)))*(min(n, size) + PROB) }
+  if (ELEMENTS >= 2^30)                                { stop('Error: There are too many elements for the output matrix') }
+  if (ELEMENTS >= 2^25) {
+    PROCEED <- readline(paste0('This function will create a large matrix containing ', ELEMENTS,
+                               ' elements --- Are you sure you want to proceed?  Y/N \n'))
+    while (!(PROCEED %in% c('Y', 'y', 'N', 'n'))) {
+      PROCEED <- readline('    Invalid response --- Are you sure you want to proceed?  Y/N \n') }
+      if (PROCEED %in% c('N', 'n'))                    { stop('Function terminated at user request') } }
 
   #Show all sample vectors with replacement
   if (replace) {
