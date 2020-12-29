@@ -109,13 +109,26 @@ moments <- function(x, skew.type = NULL, kurt.type = NULL, kurt.excess = FALSE, 
   for (i in 1:m) {
     NAS <- sum(is.na(DATA[[i]]))
     if (na.rm) { xx <- DATA[[i]][!is.na(DATA[[i]])] } else { xx <- DATA[[i]] }
-    n           <- length(xx)
-    sample.mean <- mean(xx)
-    SS          <- sum((xx - sample.mean)^2)
+    n  <- length(xx)
+    MM <- rep(0, n)
+    SS <- rep(0, n)
+    SC <- rep(0, n)
+    SQ <- rep(0, n)
+    MM[1] <- xx[1]
+    if (n > 1) {
+      for (k in 2:n) {
+        MM[k] <- ((k-1)*MM[k-1] + xx[k])/k
+        SS[k] <- SS[k-1] + ((k-1)/k)*(MM[k-1] - xx[k])^2
+        SC[k] <- SC[k-1] + ((3*SS[k-1])/k)*(MM[k-1] - xx[k]) - ((k-1)*(k-2)/k^2)*(MM[k-1] - xx[k])^3
+        SQ[k] <- SQ[k-1] + ((4*SC[k-1])/k)*(MM[k-1] - xx[k]) + ((6*SS[k-1])/k^2)*(MM[k-1] - xx[k])^2 +
+          ((k-1)*(1+(k-1)^3)/k^4)*(MM[k-1] - xx[k])^4 } }
+    MM <- MM[n]
+    SS <- SS[n]
+    SC <- SC[n]
+    SQ <- SQ[n]
+    sample.mean <- MM
     sample.var  <- ifelse(n >= 2, SS/(n-1), NA)
-    SC          <- sum((xx - sample.mean)^3)
     sample.skew <- ifelse(n >= 2, skew.adj(n)*sqrt(n)*SC/SS^(3/2), NA)
-    SQ          <- sum((xx - sample.mean)^4)
     sample.kurt <- ifelse(n >= 2, kurt.adj(n)*n*SQ/SS^2 + kurt.excess, NA)
 
     #Add to output
