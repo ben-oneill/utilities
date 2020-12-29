@@ -62,9 +62,22 @@ kurtosis <- function(x, kurt.type = NULL, kurt.excess = FALSE, na.rm = FALSE) {
   OUT <- numeric(m)
   for (i in 1:m) {
     if (na.rm) { xx  <- x[!is.na(x[,i]),i] } else { xx <- x[,i] }
-    n   <- length(xx)
-    SS  <- sum((xx - mean(xx))^2)
-    SQ  <- sum((xx - mean(xx))^4)
+    n  <- length(xx)
+    MM <- rep(0, n)
+    SS <- rep(0, n)
+    SC <- rep(0, n)
+    SQ <- rep(0, n)
+    MM[1] <- xx[1]
+    if (n > 1) {
+    for (k in 2:n) {
+      MM[k] <- ((k-1)*MM[k-1] + xx[k])/k
+      SS[k] <- SS[k-1] + ((k-1)/k)*(MM[k-1] - xx[k])^2
+      SC[k] <- SC[k-1] + ((3*SS[k-1])/k)*(MM[k-1] - xx[k]) - ((k-1)*(k-2)/k^2)*(MM[k-1] - xx[k])^3
+      SQ[k] <- SQ[k-1] + ((4*SC[k-1])/k)*(MM[k-1] - xx[k]) + ((6*SS[k-1])/k^2)*(MM[k-1] - xx[k])^2 +
+                         ((k-1)*(1+(k-1)^3)/k^4)*(MM[k-1] - xx[k])^4 } }
+    SS <- SS[n]
+    SC <- SC[n]
+    SQ <- SQ[n]
     OUT[i] <- ifelse(n >= 2, kurt.adj(n)*n*SQ/SS^2 + excess.adj(n), NA) }
 
   #Give output
