@@ -71,10 +71,10 @@ kurtosis <- function(x, kurt.type = NULL, kurt.excess = FALSE, na.rm = FALSE) {
     if (n > 1) {
     for (k in 2:n) {
       MM[k] <- ((k-1)*MM[k-1] + xx[k])/k
-      SS[k] <- SS[k-1] + ((k-1)/k)*(MM[k-1] - xx[k])^2
-      SC[k] <- SC[k-1] + ((3*SS[k-1])/k)*(MM[k-1] - xx[k]) - ((k-1)*(k-2)/k^2)*(MM[k-1] - xx[k])^3
-      SQ[k] <- SQ[k-1] + ((4*SC[k-1])/k)*(MM[k-1] - xx[k]) + ((6*SS[k-1])/k^2)*(MM[k-1] - xx[k])^2 +
-                         ((k-1)*(1+(k-1)^3)/k^4)*(MM[k-1] - xx[k])^4 } }
+      DD    <- MM[k-1] - xx[k]
+      SS[k] <- SS[k-1] + ((k-1)/k)*DD^2
+      SC[k] <- SC[k-1] + ((3*SS[k-1])/k)*DD - ((k-1)*(k-2)/k^2)*DD^3
+      SQ[k] <- SQ[k-1] + ((4*SC[k-1])/k)*DD + ((6*SS[k-1])/k^2)*DD^2 + ((k-1)*(1+(k-1)^3)/k^4)*DD^4 } }
     SS <- SS[n]
     SC <- SC[n]
     SQ <- SQ[n]
@@ -82,8 +82,3 @@ kurtosis <- function(x, kurt.type = NULL, kurt.excess = FALSE, na.rm = FALSE) {
 
   #Give output
   OUT }
-
-
-
-
-
