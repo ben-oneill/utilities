@@ -56,8 +56,9 @@ skewness <- function(x, skew.type = NULL, na.rm = FALSE) {
     if (n > 1) {
     for (k in 2:n) {
       MM[k] <- ((k-1)*MM[k-1] + xx[k])/k
-      SS[k] <- SS[k-1] + ((k-1)/k)*(MM[k-1] - xx[k])^2
-      SC[k] <- SC[k-1] + ((3*SS[k-1])/k)*(MM[k-1] - xx[k]) - ((k-1)*(k-2)/k^2)*(MM[k-1] - xx[k])^3 } }
+      DD    <- MM[k-1] - xx[k]
+      SS[k] <- SS[k-1] + ((k-1)/k)*DD^2
+      SC[k] <- SC[k-1] + ((3*SS[k-1])/k)*DD - ((k-1)*(k-2)/k^2)*DD^3 } }
     SS <- SS[n]
     SC <- SC[n]
     OUT[i] <- ifelse(n >= 2, skew.adj(n)*sqrt(n)*SC/SS^(3/2), NA) }
