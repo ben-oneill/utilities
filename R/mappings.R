@@ -112,8 +112,9 @@ mappings <- function(data, na.rm = TRUE, all.vars = FALSE, plot = TRUE) {
   OUT }
 
 
-print.data.mappings <- function(object) {
+print.data.mappings <- function(x, ...) {
 
+  object <- x
   #Extract information
   DATANAME <- attributes(object)$dataname
   FACTORS  <- attributes(object$uniqueness)$factor
@@ -175,7 +176,9 @@ print.data.mappings <- function(object) {
     cat('\n') } }
 
 
-plot.data.mappings <- function(object, node.size = 1, text.size = 1, line.width = 1) {
+plot.data.mappings <- function(x, node.size = 1, text.size = 1, line.width = 1, ...) {
+
+  object <- x
 
   #Check inputs
   if (!('data.mappings' %in% class(object)))                           { stop('Error: This print method is for data.mappings objects') }
