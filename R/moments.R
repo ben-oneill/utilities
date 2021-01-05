@@ -8,7 +8,6 @@
 #' different types of skewness and kurtosis statistics using the \code{skew.type}, \code{kurt.type} and \code{kurt.excess} inputs.  (For details
 #' on the different types of skewness and kurtosis statistics, see Joanes and Gill 1998.)
 #'
-#' @usage \code{moments}
 #' @param x A data vector/matrix/list
 #' @param skew.type The type of kurtosis statistic used ('Moment', 'Fisher Pearson' or 'Adjusted Fisher Pearson')
 #' @param kurt.type The type of kurtosis statistic used ('Moment', 'Fisher Pearson' or 'Adjusted Fisher Pearson')

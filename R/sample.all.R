@@ -6,7 +6,6 @@
 #' of elements.  If \code{size = n} and \code{replace = TRUE} then the list of all sample vectors corresponds to a list of all permutations of
 #' the integers \code{1, ..., n}.
 #'
-#' @usage \code{sample.all}
 #' @param n Number of integers to sample from
 #' @param size Length of the sample vectors
 #' @param replace Logical value; if \code{FALSE} the sampling is without replacement; if \code{TRUE} the sampling is with replacement

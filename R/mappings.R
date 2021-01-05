@@ -22,7 +22,6 @@
 #' least two identical values in the domain (which may include one or more \code{NA} values) that map to different values in the codomain (which
 #' may include one or more \code{NA} values).
 #'
-#' @usage \code{mappings}
 #' @param data A data-frame (or an object coercible to a data-frame)
 #' @param na.rm Logical value; if \code{TRUE} the function removes \code{NA} values from consideration
 #' @param all.vars Logical value; if \code{TRUE} the function only examines factor variables in the data-frame; if \code{FALSE} the function
