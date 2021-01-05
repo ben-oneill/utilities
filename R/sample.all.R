@@ -6,11 +6,10 @@
 #' of elements.  If \code{size = n} and \code{replace = TRUE} then the list of all sample vectors corresponds to a list of all permutations of
 #' the integers \code{1, ..., n}.
 #'
-#' @usage \code{sample.all}
 #' @param n Number of integers to sample from
 #' @param size Length of the sample vectors
 #' @param replace Logical value; if \code{FALSE} the sampling is without replacement; if \code{TRUE} the sampling is with replacement
-#' @prob Probability vector giving the sampling probability for each element (must be a probability vector with length \code{n})
+#' @param prob Probability vector giving the sampling probability for each element (must be a probability vector with length \code{n})
 #' @return A matrix of all permutations of the elements \code{1, ..., n} (rows of the matrix give the permutations)
 
 sample.all <- function(n, size = n, replace = FALSE, prob = NULL) {

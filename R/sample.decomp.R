@@ -13,7 +13,6 @@
 #' group required to obtain this pooled sample.  The function returns a data-frame showing the sample statistics for all the groups including
 #' the pooled sample.
 #'
-#' @usage \code{moment.decomp}
 #' @param moments A data-frame of moments (an object of class 'moments')
 #' @param n A vector of sample sizes
 #' @param sample.mean A vector of sample means

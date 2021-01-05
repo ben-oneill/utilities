@@ -6,7 +6,6 @@
 #' sample kurtosis of the data.  For a matrix input the function treats each column as a data vector and returns a vector of values for the
 #' sample kurtosis of each of these datasets.  The function can compute different types of kurtosis statistics using the \code{kurt.type} input.
 #'
-#' @usage \code{kurtosis}
 #' @param x A data vector/matrix
 #' @param kurt.type The type of kurtosis statistic used ('Moment', 'Fisher Pearson' or 'Adjusted Fisher Pearson')
 #' @param kurt.excess Logical value; if \code{TRUE} the function gives the excess kurtosis (instead of raw kurtosis)

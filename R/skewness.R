@@ -6,7 +6,6 @@
 #' sample skewness of the data.  For a matrix input the function treats each column as a data vector and returns a vector of values for the
 #' sample skewness of each of these datasets.  The function can compute different types of skewness statistics using the \code{skew.type} input.
 #'
-#' @usage \code{skewness}
 #' @param x A data vector/matrix
 #' @param skew.type The type of skewness statistic used ('Moment', 'Fisher Pearson' or 'Adjusted Fisher Pearson')
 #' @param na.rm Logical value; if \code{TRUE} the function removes \code{NA} values

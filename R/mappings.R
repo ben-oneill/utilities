@@ -22,7 +22,8 @@
 #' least two identical values in the domain (which may include one or more \code{NA} values) that map to different values in the codomain (which
 #' may include one or more \code{NA} values).
 #'
-#' @usage \code{mappings}
+#' @aliases print.data.mappings
+#'
 #' @param data A data-frame (or an object coercible to a data-frame)
 #' @param na.rm Logical value; if \code{TRUE} the function removes \code{NA} values from consideration
 #' @param all.vars Logical value; if \code{TRUE} the function only examines factor variables in the data-frame; if \code{FALSE} the function
@@ -36,7 +37,7 @@ mappings <- function(data, na.rm = TRUE, all.vars = FALSE, plot = TRUE) {
   DATANAME <- deparse(substitute(data))
 
   #Check input data
-  data <- as.data.frame(data)
+  DATA <- data <- as.data.frame(data)
   if (!is.data.frame(DATA))                                       { stop('Error: Input is not a data frame') }
 
   #Check input na.rm
@@ -112,13 +113,14 @@ mappings <- function(data, na.rm = TRUE, all.vars = FALSE, plot = TRUE) {
   #Return output
   OUT }
 
+print.data.mappings <- function(x, ...) {
 
-print.data.mappings <- function(object) {
-
+  object <- x
   #Extract information
   DATANAME <- attributes(object)$dataname
   FACTORS  <- attributes(object$uniqueness)$factor
   ALLFACS  <- all(FACTORS)
+  NA.RM    <- attributes(object)$na.rm
   RED  <- object$factor.redundant
   NRED <- object$factor.nonredundant
   VARS <- object$nonfactor
@@ -138,7 +140,8 @@ print.data.mappings <- function(object) {
   if ((TYPE1  > 0)&(TYPE2  > 0)) { cat('and ') }
   if (TYPE2 == 1) { cat(n2, 'non-factor variable ')  }
   if (TYPE2 == 2) { cat(n2, 'non-factor variables ')  }
-  cat('\n \n')
+  if (NA.RM) { cat('(analysis ignores NA values) \n') }
+  cat('\n')
 
   #Print results of mapping function
   if (m == 0)   { cat('There were no mappings identified \n \n') } else {
@@ -173,8 +176,20 @@ print.data.mappings <- function(object) {
     for (i in 1:n2) { cat('    ', VARS[i], '\n') }
     cat('\n') } }
 
+#' Plot components from data mapping
+#'
+#' This needs \code{ggplot2} and \code{ggdag} to function correctly.
+#'
+#' @param x a data mapping
+#' @param node.size node size
+#' @param text.size label size for a node
+#' @param line.width line width
+#' @param ... not used
+#' @returns nothing
+#'
+plot.data.mappings <- function(x, node.size = 1, text.size = 1, line.width = 1, ...) {
 
-plot.data.mappings <- function(object, node.size = 1, text.size = 1, line.width = 1) {
+  object <- x
 
   #Check inputs
   if (!('data.mappings' %in% class(object)))                           { stop('Error: This print method is for data.mappings objects') }
@@ -194,7 +209,8 @@ plot.data.mappings <- function(object, node.size = 1, text.size = 1, line.width 
   #Extract information
   DATANAME <- attributes(object)$dataname
   FACTORS  <- attributes(object$uniqueness)$factor
-  ALLFACS  <- all(FACTORS)
+  ALL.VARS <- attributes(object)$all.vars
+  NA.RM    <- attributes(object)$na.rm
   MM       <- object$mappings
   m        <- length(MM)
 
@@ -207,8 +223,8 @@ plot.data.mappings <- function(object, node.size = 1, text.size = 1, line.width 
     #Check installed packages and load them
     GGDAG   <- requireNamespace('ggdag',   quietly = TRUE)
     GGPLOT2 <- requireNamespace('ggplot2', quietly = TRUE)
-    if (GGDAG)   { library(ggdag)   } else { stop('Error: Plotting a data.mappings object requires the ggdag package')   }
-    if (GGPLOT2) { library(ggplot2) } else { stop('Error: Plotting a data.mappings object requires the ggplot2 package') }
+    if (!GGDAG)   { stop('Error: Plotting a data.mappings object requires the ggdag package')   }
+    if (!GGPLOT2) { stop('Error: Plotting a data.mappings object requires the ggplot2 package') }
 
     #Create directed acyclic graph (DAG)
     UU    <- object$uniqueness
@@ -231,20 +247,23 @@ plot.data.mappings <- function(object, node.size = 1, text.size = 1, line.width 
       if (nnn[i] %in% object$factor.nonredundant) { DAG$data$Type[i] <- 'Non-Redundant Factor' } }
 
     #Create the plot
-    TITLE <- 'Variable Mapping Plot'
-    SUBTT <- '(redundant factors are shown in grey)'
-    PLOT <- ggplot2::ggplot(ggplot2::aes(x = x, y = y, xend = xend, yend = yend, colour = Type), data = DAG) +
-            ggdag::geom_dag_point(size = 20*node.size) +
+    SUBTITLE <- ifelse(ALL.VARS, ifelse(NA.RM, paste0('(Mappings for all variables in data-frame ', DATANAME, ' --- Analysis ignores NA values) \n'),
+                                               paste0('(Mappings for all variables in data-frame ', DATANAME, ') \n')),
+                                 ifelse(NA.RM, paste0('(Mappings for all factor variables in data-frame ', DATANAME, ' --- Analysis ignores NA values) \n'),
+                                               paste0('(Mappings for all variables in data-frame ', DATANAME, ') \n')))
+    PLOT <- ggplot2::ggplot(ggplot2::aes_string(x = "x", y = "y", xend = "xend", yend = "yend", colour = "Type"), data = DAG) +
+            ggdag::geom_dag_point(size = 20*sqrt(node.size)) +
             ggplot2::scale_colour_manual(breaks = c('Redundant Factor', 'Non-Redundant Factor', 'Other Variable'),
                                          values = c('green3', 'darkgreen', 'cornflowerblue')) +
             ggdag::geom_dag_edges(edge_width = 0.5*line.width) +
-            ggdag::geom_dag_text(size = 4*text.size, colour = 'white') +
+            ggdag::geom_dag_text(size = 4*sqrt(text.size), colour = 'white') +
             ggdag::theme_dag() +
+            ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(size = 10))) +
             ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = 'bottom') +
-            ggplot2::theme(plot.title    = ggplot2::element_text(hjust = 0.5, size = 14, face = 'bold'),
-                           plot.subtitle = ggplot2::element_text(hjust = 0.5, face = 'bold')) +
-            ggplot2::ggtitle(TITLE) +
-            ggplot2::labs(subtitle = SUBTT)
+            ggplot2::theme(plot.title    = ggplot2::element_text(hjust = 0.5, size = 18, face = 'bold'),
+                           plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 10, face = 'bold')) +
+            ggplot2::ggtitle('Variable Mapping Plot') +
+            ggplot2::labs(subtitle = SUBTITLE)
 
     #Print the plot
     plot(PLOT) } }
