@@ -22,6 +22,8 @@
 #' least two identical values in the domain (which may include one or more \code{NA} values) that map to different values in the codomain (which
 #' may include one or more \code{NA} values).
 #'
+#' @aliases print.data.mappings
+#'
 #' @param data A data-frame (or an object coercible to a data-frame)
 #' @param na.rm Logical value; if \code{TRUE} the function removes \code{NA} values from consideration
 #' @param all.vars Logical value; if \code{TRUE} the function only examines factor variables in the data-frame; if \code{FALSE} the function
@@ -111,7 +113,6 @@ mappings <- function(data, na.rm = TRUE, all.vars = FALSE, plot = TRUE) {
   #Return output
   OUT }
 
-
 print.data.mappings <- function(x, ...) {
 
   object <- x
@@ -175,7 +176,17 @@ print.data.mappings <- function(x, ...) {
     for (i in 1:n2) { cat('    ', VARS[i], '\n') }
     cat('\n') } }
 
-
+#' Plot components from data mapping
+#'
+#' This needs \code{ggplot2} and \code{ggdag} to function correctly.
+#'
+#' @param x a data mapping
+#' @param node.size node size
+#' @param text.size label size for a node
+#' @param line.width line width
+#' @param ... not used
+#' @returns nothing
+#'
 plot.data.mappings <- function(x, node.size = 1, text.size = 1, line.width = 1, ...) {
 
   object <- x
