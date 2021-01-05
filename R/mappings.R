@@ -209,8 +209,8 @@ plot.data.mappings <- function(object, node.size = 1, text.size = 1, line.width 
     #Check installed packages and load them
     GGDAG   <- requireNamespace('ggdag',   quietly = TRUE)
     GGPLOT2 <- requireNamespace('ggplot2', quietly = TRUE)
-    if (GGDAG)   { library(ggdag)   } else { stop('Error: Plotting a data.mappings object requires the ggdag package')   }
-    if (GGPLOT2) { library(ggplot2) } else { stop('Error: Plotting a data.mappings object requires the ggplot2 package') }
+    if (!GGDAG)   { stop('Error: Plotting a data.mappings object requires the ggdag package')   }
+    if (!GGPLOT2) { stop('Error: Plotting a data.mappings object requires the ggplot2 package') }
 
     #Create directed acyclic graph (DAG)
     UU    <- object$uniqueness

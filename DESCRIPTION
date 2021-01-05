@@ -10,5 +10,9 @@ Description: This package contains data utility functions for use in probability
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Imports: 
-RoxygenNote: 6.1.1
+Imports:
+  stats
+Suggests:
+  ggplot2,
+  ggdag
+RoxygenNote: 7.1.1
