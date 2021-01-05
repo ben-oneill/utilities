@@ -35,7 +35,7 @@ mappings <- function(data, na.rm = TRUE, all.vars = FALSE, plot = TRUE) {
   DATANAME <- deparse(substitute(data))
 
   #Check input data
-  data <- as.data.frame(data)
+  DATA <- data <- as.data.frame(data)
   if (!is.data.frame(DATA))                                       { stop('Error: Input is not a data frame') }
 
   #Check input na.rm
@@ -237,7 +237,7 @@ plot.data.mappings <- function(object, node.size = 1, text.size = 1, line.width 
                                                paste0('(Mappings for all variables in data-frame ', DATANAME, ') \n')),
                                  ifelse(NA.RM, paste0('(Mappings for all factor variables in data-frame ', DATANAME, ' --- Analysis ignores NA values) \n'),
                                                paste0('(Mappings for all variables in data-frame ', DATANAME, ') \n')))
-    PLOT <- ggplot2::ggplot(ggplot2::aes(x = x, y = y, xend = xend, yend = yend, colour = Type), data = DAG) +
+    PLOT <- ggplot2::ggplot(ggplot2::aes_string(x = "x", y = "y", xend = "xend", yend = "yend", colour = "Type"), data = DAG) +
             ggdag::geom_dag_point(size = 20*sqrt(node.size)) +
             ggplot2::scale_colour_manual(breaks = c('Redundant Factor', 'Non-Redundant Factor', 'Other Variable'),
                                          values = c('green3', 'darkgreen', 'cornflowerblue')) +
