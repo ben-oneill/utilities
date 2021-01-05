@@ -6,7 +6,8 @@ Date: 12 November 2020
 Authors@R: person("Ben", "O'Neill", email = "ben.oneill@hotmail.com", role = c("aut", "cre"))
 Author: Ben O'Neill [aut, cre]
 Maintainer: Ben O'Neill <ben.oneill@hotmail.com>
-Description: This package contains data utility functions for use in probability and statistics
+Description: Data utility functions for use in probability and statistics.  Includes functions for computing higher-moments for samples and their decompositions.
+  Also includes utilities to examine functional mappings between factor variables and other variables in a data set.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
