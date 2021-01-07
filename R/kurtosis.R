@@ -11,7 +11,10 @@
 #' @param kurt.excess Logical value; if \code{TRUE} the function gives the excess kurtosis (instead of raw kurtosis)
 #' @param na.rm Logical value; if \code{TRUE} the function removes \code{NA} values
 #' @return The sample kurtosis of the data vector/matrix
-
+#'
+#' @examples
+#' kurtosis(rnorm(1000))
+#' kurtosis(rexp(1000))
 kurtosis <- function(x, kurt.type = NULL, kurt.excess = FALSE, na.rm = FALSE) {
 
   #Check inputs

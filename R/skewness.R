@@ -10,7 +10,12 @@
 #' @param skew.type The type of skewness statistic used ('Moment', 'Fisher Pearson' or 'Adjusted Fisher Pearson')
 #' @param na.rm Logical value; if \code{TRUE} the function removes \code{NA} values
 #' @return The sample skewness of the data vector/matrix
-
+#'
+#' @examples
+#'
+#' skewness(rnorm(1000))
+#' skewness(rexp(1000))
+#'
 skewness <- function(x, skew.type = NULL, na.rm = FALSE) {
 
   #Check input x

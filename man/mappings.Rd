@@ -44,3 +44,16 @@ is a mapping between the variables, an \code{NA} value is treated as if it were 
 least two identical values in the domain (which may include one or more \code{NA} values) that map to different values in the codomain (which
 may include one or more \code{NA} values).
 }
+\examples{
+
+DATA <- data.frame(
+  VAR1 = c(0,1,2,2,0,1,2,0,0,1),
+  VAR2 = c('A','B','B','B','A','B','B','A','A','B'),
+  VAR3 = 1:10,
+  VAR4 = c('A','B','C','D','A','B','D','A','A','B'),
+  VAR5 = c(1:5,1:5)
+)
+
+# Apply mappings
+mappings(DATA, all.vars = TRUE, plot=FALSE)
+}

@@ -65,3 +65,6 @@ pooled sample as the input \code{pooled}; in this case that group is treated as 
 group required to obtain this pooled sample.  The function returns a data-frame showing the sample statistics for all the groups including
 the pooled sample.
 }
+\seealso{
+\code{\link{moments}}
+}

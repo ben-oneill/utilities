@@ -21,3 +21,8 @@ The logarithm of the input
 This version of the logarithm function allows both numeric and complex inputs, including negative numeric values.  If the output of the
 logarithm has no complex part then the output is given as a numeric value.
 }
+\examples{
+log(1)
+log(-1)
+
+}

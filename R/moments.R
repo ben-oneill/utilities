@@ -15,6 +15,23 @@
 #' @param na.rm Logical value; if \code{TRUE} the function removes \code{NA} values
 #' @param include.sd Logical value; if \code{TRUE} the output includes a column for the sample standard deviation (if needed)
 #' @return A data frame containing the sample moments of the data vector/matrix
+#'
+#' @examples
+#' #Create some subgroups of mock data and a pooled dataset
+#' set.seed(1)
+#' N    <- c(28, 44, 51)
+#' SUB1 <- rnorm(N[1])
+#' SUB2 <- rnorm(N[2])
+#' SUB3 <- rnorm(N[3])
+#' DATA <- list(Subgroup1 = SUB1, Subgroup2 = SUB2, Subgroup3 = SUB3)
+#' POOL <- c(SUB1, SUB2, SUB3)
+#'
+#' #Compute sample moments for subgroups and pooled data
+#' MOMENTS <- moments(DATA)
+#' POOLMOM <- moments(POOL)
+#'
+#' #Compute pooled moments via sample decomposition
+#' sample.decomp(moments = MOMENTS)
 
 moments <- function(x, skew.type = NULL, kurt.type = NULL, kurt.excess = FALSE, na.rm = TRUE, include.sd = FALSE) {
 
