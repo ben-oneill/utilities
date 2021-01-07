@@ -27,7 +27,8 @@
 #' @param kurt.excess Logical value; if \code{TRUE} the sample kurtosis is the excess kurtosis (instead of the raw kurtosis)
 #' @param include.sd Logical value; if \code{TRUE} the output includes a column for the sample standard deviation (if needed)
 #' @return A data-frame of all groups showing their sample sizes and sample moments
-
+#'
+#' @seealso \code{\link{moments}}
 sample.decomp <- function(moments = NULL, n = NULL,
                           sample.mean = NULL, sample.sd = NULL, sample.var = NULL, sample.skew = NULL, sample.kurt = NULL,
                           names = NULL, pooled = NULL, skew.type = NULL, kurt.type = NULL, kurt.excess = NULL, include.sd = FALSE) {

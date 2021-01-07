@@ -26,3 +26,7 @@ This function computes the sample kurtosis for a data vector or matrix.  For a v
 sample kurtosis of the data.  For a matrix input the function treats each column as a data vector and returns a vector of values for the
 sample kurtosis of each of these datasets.  The function can compute different types of kurtosis statistics using the \code{kurt.type} input.
 }
+\examples{
+kurtosis(rnorm(1000))
+kurtosis(rexp(1000))
+}

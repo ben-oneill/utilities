@@ -39,3 +39,20 @@ column/element as a data vector and returns a matrix of values for the sample mo
 different types of skewness and kurtosis statistics using the \code{skew.type}, \code{kurt.type} and \code{kurt.excess} inputs.  (For details
 on the different types of skewness and kurtosis statistics, see Joanes and Gill 1998.)
 }
+\examples{
+#Create some subgroups of mock data and a pooled dataset
+set.seed(1)
+N    <- c(28, 44, 51)
+SUB1 <- rnorm(N[1])
+SUB2 <- rnorm(N[2])
+SUB3 <- rnorm(N[3])
+DATA <- list(Subgroup1 = SUB1, Subgroup2 = SUB2, Subgroup3 = SUB3)
+POOL <- c(SUB1, SUB2, SUB3)
+
+#Compute sample moments for subgroups and pooled data
+MOMENTS <- moments(DATA)
+POOLMOM <- moments(POOL)
+
+#Compute pooled moments via sample decomposition
+sample.decomp(moments = MOMENTS)
+}

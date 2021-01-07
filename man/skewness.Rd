@@ -24,3 +24,9 @@ This function computes the sample skewness for a data vector or matrix.  For a v
 sample skewness of the data.  For a matrix input the function treats each column as a data vector and returns a vector of values for the
 sample skewness of each of these datasets.  The function can compute different types of skewness statistics using the \code{skew.type} input.
 }
+\examples{
+
+skewness(rnorm(1000))
+skewness(rexp(1000))
+
+}

@@ -30,6 +30,19 @@
 #' examines all variables in the data-frame (caution is required in interpretation of output)
 #' @param plot Logical value; if \code{TRUE} the function plots the DAG for the mappings (requires \code{ggplot2} and \code{ggdag} to work)
 #' @return A list object of class 'mappings' giving information on the mappings between the variables
+#'
+#' @examples
+#'
+#' DATA <- data.frame(
+#'   VAR1 = c(0,1,2,2,0,1,2,0,0,1),
+#'   VAR2 = c('A','B','B','B','A','B','B','A','A','B'),
+#'   VAR3 = 1:10,
+#'   VAR4 = c('A','B','C','D','A','B','D','A','A','B'),
+#'   VAR5 = c(1:5,1:5)
+#' )
+#'
+#' # Apply mappings
+#' mappings(DATA, all.vars = TRUE, plot=FALSE)
 
 mappings <- function(data, na.rm = TRUE, all.vars = FALSE, plot = TRUE) {
 
