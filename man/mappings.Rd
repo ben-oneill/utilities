@@ -55,5 +55,5 @@ DATA <- data.frame(
 )
 
 # Apply mappings
-mappings(DATA, all.vars = TRUE, plot=FALSE)
+mappings(DATA, all.vars = TRUE, plot = FALSE)
 }
