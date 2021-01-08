@@ -42,7 +42,7 @@
 #' )
 #'
 #' # Apply mappings
-#' mappings(DATA, all.vars = TRUE, plot=FALSE)
+#' mappings(DATA, all.vars = TRUE, plot = FALSE)
 
 mappings <- function(data, na.rm = TRUE, all.vars = FALSE, plot = TRUE) {
 
