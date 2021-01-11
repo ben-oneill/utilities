@@ -264,7 +264,10 @@ plot.data.mappings <- function(x, node.size = 1, text.size = 1, line.width = 1, 
                                                paste0('(Mappings for all variables in data-frame ', DATANAME, ') \n')),
                                  ifelse(NA.RM, paste0('(Mappings for all factor variables in data-frame ', DATANAME, ' --- Analysis ignores NA values) \n'),
                                                paste0('(Mappings for all variables in data-frame ', DATANAME, ') \n')))
-    PLOT <- ggplot2::ggplot(ggplot2::aes_string(x = "x", y = "y", xend = "xend", yend = "yend", colour = "Type"), data = DAG) +
+    PLOT <- ggplot2::ggplot(ggplot2::aes_string(x = "x", y = "y", xend = "xend", yend = "yend", colour = "Type"),
+                            data = ggplot2::fortify(DAG)) +
+            ggplot2::scale_x_continuous(expand = ggplot2::expansion(c(0.1, 0.1))) +
+            ggplot2::scale_y_continuous(expand = ggplot2::expansion(c(0.1, 0.1))) +
             ggdag::geom_dag_point(size = 20*sqrt(node.size)) +
             ggplot2::scale_colour_manual(breaks = c('Redundant Factor', 'Non-Redundant Factor', 'Other Variable'),
                                          values = c('green3', 'darkgreen', 'cornflowerblue')) +
@@ -279,4 +282,4 @@ plot.data.mappings <- function(x, node.size = 1, text.size = 1, line.width = 1, 
             ggplot2::labs(subtitle = SUBTITLE)
 
     #Print the plot
-    plot(PLOT) } }
+    return(PLOT) } }
