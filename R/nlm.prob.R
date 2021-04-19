@@ -27,6 +27,7 @@
 #' @param prob.vectors A list specifying which sets of elements are constrained to be a probability vector (each element in the list
 #' should be a vector specifying indices in the argument vector; elements cannot overlap into multiple probability vectors).
 #' @param lambda The tuning parameter used in the softmax transformation for the optimisation (a single positive numeric value).
+#' @param eta0max The maximum absolute value for the elements of eta0 (the starting value in the unconstrained optimisation problem).
 #' @param hessian Logical; if \code{TRUE} then the output of the function includes the Hessian of \code{f} at the minimising point.
 #' @param typsize An estimate of the size of each parameter at the minimum.
 #' @param fscale An estimate of the size of \code{f} at the minimum.
@@ -48,7 +49,7 @@
 #' @return A list showing the computed minimising point and minimum of \code{f} and other related information.
 
 nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
-                     hessian = FALSE, typsize = rep(1, length(p)),
+                     eta0max = 1e10, hessian = FALSE, typsize = rep(1, length(p)),
                      fscale = 1, print.level = 0, ndigit = 12, gradtol = 1e-06,
                      stepmax = max(1000*sqrt(sum((p/typsize)^2)), 1000),
                      steptol = 1e-06, iterlim = 100, check.analyticals = TRUE) {
@@ -71,8 +72,18 @@ nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
     if (min(INDICES) < 1)                        { stop('Error: Each element of prob.vectors should be a vector of indices for the input p')  }
     if (max(INDICES) > m)                        { stop('Error: Each element of prob.vectors should be a vector of indices for the input p')  }
     prob.vectors[[i]] <- sort(unique(INDICES))
-    if (min(p[prob.vectors[[i]]]) <  0)          { stop(paste0('Error: prob.vector ', i, ' has a negative element')) }
-    if (sum(p[prob.vectors[[i]]]) != 1)          { stop(paste0('Error: prob.vector ', i, ' does not sum to one')) } }
+    WARN <- FALSE
+    if (min(p[prob.vectors[[i]]]) <  0) {
+      warning(paste0('Error: prob.vector ', i, ' has a negative element'))
+      WARN <- TRUE }
+    if (sum(p[prob.vectors[[i]]]) != 1) {
+      warning(paste0('Error: prob.vector ', i, ' does not sum to one'))
+      WARN <- TRUE }
+    if (WARN) {
+      PVEC <- pmax(1e-5, p[prob.vectors[[i]]])
+      PVEC <- PVEC/sum(PVEC)
+      p[prob.vectors[[i]]] <- PVEC
+      warning(paste0('We have adjusted the starting values of prob.vector ', i, ' to use a valid probability vector\n')) } }
   if (length(unique(unlist(prob.vectors))) < length(unlist(prob.vectors))) {
                                                    stop('Error: Lists of indices in prob.vectors must not overlap') }
 
@@ -224,6 +235,7 @@ nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
 
   #Compute nonlinear minimisation (via unconstrained objective function)
   eta0 <- c(p_to_eta(p))
+  eta0 <- pmin(pmax(eta0, -eta0max), eta0max)
   NLM <- stats::nlm(f = OBJ, p = eta0, hessian = hessian, typsize = p_to_eta(typsize),
                     fscale = fscale, print.level = print.level, ndigit = ndigit,
                     gradtol = gradtol, stepmax = stepmax, steptol = steptol, iterlim = iterlim,
