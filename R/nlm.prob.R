@@ -1,6 +1,6 @@
-#' Nonlinear minimisation for a function with one or more probability vectors as inputs
+#' Nonlinear minimisation/maximisation allowing probability vectors as inputs
 #'
-#' \code{nlm.prob} minimises a function with one or more probability vectors as inputs
+#' \code{nlm.prob} minimises/maximises a function allowing probability vectors as inputs
 #'
 #' This is a variation of the \code{stats::nlm} function for nonlinear minimisation.  The present function is designed to
 #' minimise an objective function with one or more arguments that are probability vectors.  (The objective function may also
@@ -19,7 +19,8 @@
 #' the respective probability vectors; if the latter, there must be one value for each element of the \code{prob.vector} input.)
 #'
 #' Most of the input descriptions below are adapted from the corresponding descriptions in \code{stat::nlm}, since our function is
-#' a wrapper to that function.  The only additional inputs for this function are \code{prob.vectors} and \code{lambda}.
+#' a wrapper to that function.  The additional inputs for this function are \code{prob.vectors}, \code{lambda} and \code{eta0max}.
+#' The function also adds an option \code{maximise} to conduct maximisation instead of minimisation.
 #'
 #' @usage \code{nlm.prob}
 #' @param f The objective function to be minimised; output should be a single numeric value.
@@ -28,6 +29,7 @@
 #' should be a vector specifying indices in the argument vector; elements cannot overlap into multiple probability vectors).
 #' @param lambda The tuning parameter used in the softmax transformation for the optimisation (a single positive numeric value).
 #' @param eta0max The maximum absolute value for the elements of eta0 (the starting value in the unconstrained optimisation problem).
+#' @param maximise/maximize Logical value; if \code{TRUE} the function maximises the objective function instead of mimimising.
 #' @param hessian Logical; if \code{TRUE} then the output of the function includes the Hessian of \code{f} at the minimising point.
 #' @param typsize An estimate of the size of each parameter at the minimum.
 #' @param fscale An estimate of the size of \code{f} at the minimum.
@@ -49,7 +51,8 @@
 #' @return A list showing the computed minimising point and minimum of \code{f} and other related information.
 
 nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
-                     eta0max = 1e10, hessian = FALSE, typsize = rep(1, length(p)),
+                     eta0max = 1e10, maximise = FALSE, maximize = maximise,
+                     hessian = FALSE, typsize = rep(1, length(p)),
                      fscale = 1, print.level = 0, ndigit = 12, gradtol = 1e-06,
                      stepmax = max(1000*sqrt(sum((p/typsize)^2)), 1000),
                      steptol = 1e-06, iterlim = 100, check.analyticals = TRUE) {
@@ -93,6 +96,15 @@ nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
   ss <- length(lambda)
   if ((ss != 1)&(ss != s))                       { stop('Error: Input lambda should either be a single value, or it should have the same length as prob.vectors') }
   if (ss == 1) { lambda <- rep(lambda, s) }
+
+  #Check input maximise
+  if (!missing(maximise) && !missing(maximize)) {
+    if (maximise != maximize) {
+      warning("Specify 'maximise' or 'maximize' but not both") } else {
+         stop("Error: specify 'maximise' or 'maximize' but not both") } }
+  MAX <- maximize
+  if (!is.logical(MAX))                         { stop('Error: Input maximise/maximize should be a single logical value') }
+  if (length(MAX) != 1)                         { stop('Error: Input maximise/maximize should be a single logical value') }
 
   #Convert input prob.vector to list of argument-indices
   #The object ARGS.INDEX is a list of argument indices
@@ -139,29 +151,30 @@ nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
     DD1[[s+1]]  <- diag(r)
     DD2[[s+1]]  <- array(0, dim = c(r, r, r))
 
-    #Generate output vector (labelled EEE)
-    EEE <- rep(NA, m)
+    #Generate output vector (labelled PPP)
+    PPP <- rep(NA, m)
     D1  <- array(0, dim = c(m, m-s))
     D2  <- array(0, dim = c(m, m-s, m-s))
     t <- 0
     for (i in 1:s) {
       r <- ARGS.LENGTH[i]
       IND <- ARGS.INDEX[[i]]
-      EEE[IND] <- ARGS[[i]]
-      if (r > 0) {
+      PPP[IND] <- ARGS[[i]]
+      if (r > 1) {
         D1[IND, (t+1):(t+r-1)] <- DD1[[i]]
         D2[IND, (t+1):(t+r-1), (t+1):(t+r-1)] <- DD2[[i]] }
       t <- t+r-1 }
     r <- ARGS.LENGTH[s+1]
-    IND <- ARGS.INDEX[[s+1]]
-    EEE[IND] <- ARGS[[s+1]]
-    D1[IND, (t+1):(t+r)] <- DD1[[s+1]]
-    D2[IND, (t+1):(t+r), (t+1):(t+r)] <- DD2[[s+1]]
-    attr(EEE, 'gradient') <- D1
-    attr(EEE, 'hessian')  <- D2
+    if (r > 0) {
+      IND <- ARGS.INDEX[[s+1]]
+      PPP[IND] <- ARGS[[s+1]]
+      D1[IND, (t+1):(t+r)] <- DD1[[s+1]]
+      D2[IND, (t+1):(t+r), (t+1):(t+r)] <- DD2[[s+1]] }
+    attr(PPP, 'gradient') <- D1
+    attr(PPP, 'hessian')  <- D2
 
     #Give output
-    EEE }
+    PPP }
 
   #Create mapping from p to eta
   #Eta is the unconstrained input vector
@@ -179,55 +192,59 @@ nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
       DD1[[i]]  <- attributes(SOFTINV)$gradient
       DD2[[i]]  <- attributes(SOFTINV)$hessian }
     r <- ARGS.LENGTH[s+1]
-    IND <- ARGS.INDEX[[s+1]]
-    ARGS[[s+1]] <- p[IND]
-    DD1[[s+1]]  <- diag(r)
-    DD2[[s+1]]  <- array(0, dim = c(r, r, r))
+    if (r > 0) {
+      IND <- ARGS.INDEX[[s+1]]
+      ARGS[[s+1]] <- p[IND]
+      DD1[[s+1]]  <- diag(r)
+      DD2[[s+1]]  <- array(0, dim = c(r, r, r)) }
 
-    #Generate output vector (labelled PPP)
-    PPP <- unlist(ARGS)
+    #Generate output vector (labelled EEE)
+    EEE <- unlist(ARGS)
     D1  <- array(0, dim = c(m-s, m))
     D2  <- array(0, dim = c(m-s, m, m))
     t <- 0
     for (i in 1:s) {
       r <- ARGS.LENGTH[i]
-      IND <- ARGS.INDEX[[i]]
-      D1[(t+1):(t+r-1), IND]      <- DD1[[i]]
-      D2[(t+1):(t+r-1), IND, IND] <- DD2[[i]]
+      if (r > 1) {
+        IND <- ARGS.INDEX[[i]]
+        D1[(t+1):(t+r-1), IND]      <- DD1[[i]]
+        D2[(t+1):(t+r-1), IND, IND] <- DD2[[i]] }
       t <- t+r-1 }
     r <- ARGS.LENGTH[s+1]
-    IND <- ARGS.INDEX[[s+1]]
-    D1[(t+1):(t+r), IND]      <- DD1[[s+1]]
-    D2[(t+1):(t+r), IND, IND] <- DD2[[s+1]]
-    attr(PPP, 'gradient') <- D1
-    attr(PPP, 'hessian')  <- D2
+    if (r > 0) {
+      IND <- ARGS.INDEX[[s+1]]
+      D1[(t+1):(t+r), IND]      <- DD1[[s+1]]
+      D2[(t+1):(t+r), IND, IND] <- DD2[[s+1]] }
+    attr(EEE, 'gradient') <- D1
+    attr(EEE, 'hessian')  <- D2
 
     #Give output
-    PPP }
+    EEE }
 
   #Create unconstrained objective function
+  SGN <- ifelse(MAX, -1, 1)
   OBJ <- function(eta, ...) {
 
     #Compute output (labelled GG)
     PP <- eta_to_p(eta)
-    GG <- f(c(PP), ...)
+    GG <- SGN*f(c(PP), ...)
 
     #Compute gradient (if available)
-    GRAD.f <- attributes(GG)$gradient
+    GRAD.f <- SGN*attributes(GG)$gradient
     if (!is.null(GRAD.f)) {
       GRAD.p <- attributes(PP)$gradient
       D1 <- GRAD.f %*% GRAD.p
       attr(GG, 'gradient') <- D1 }
 
     #Compute Hessian (if available)
-    HESS.f <- attributes(GG)$hessian
+    HESS.f <- SGN*attributes(GG)$hessian
     if ((!is.null(GRAD.f))&(!is.null(HESS.f))) {
       HESS.p <- attributes(PP)$hessian
       T1 <- (t(GRAD.p) %*% (HESS.f %*% GRAD.p))
       T2 <- matrix(0, m-1, m-1)
       for (i in 1:(m-1)) {
-      for (j in 1:(m-1)) {
-        T2[i,j] <- sum(GRAD.f*HESS.p[ ,i,j]) } }
+        for (j in 1:(m-1)) {
+          T2[i,j] <- sum(GRAD.f*HESS.p[ ,i,j]) } }
       attr(GG, 'hessian') <- T1 + T2 }
 
     #Give output
@@ -242,20 +259,29 @@ nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
                     check.analyticals = TRUE)
 
   #Convert back to probability space
-  MIN      <- NLM$minimum
+  OPT      <- SGN*NLM$minimum
   ESTIMATE <- eta_to_p(NLM$estimate)
-  PROB.MIN <- c(ESTIMATE)
-  GRAD.MIN <- attributes(f(PROB.MIN))$gradient
-  HESS.MIN <- attributes(f(PROB.MIN))$hessian
+  PROB.OPT <- c(ESTIMATE)
+  GRAD.OPT <- SGN*attributes(f(PROB.OPT))$gradient
+  HESS.OPT <- SGN*attributes(f(PROB.OPT))$hessian
 
   #Generate output list
-  if (hessian) {
-    OUT <- list(minimum = MIN, estimate = PROB.MIN,
-                gradient = GRAD.MIN, hessian = HESS.MIN,
-                code = NLM$code, iterations = NLM$iterations) } else {
-    OUT <- list(minimum = MIN, estimate = PROB.MIN, gradient = GRAD.MIN,
-                code = NLM$code, iterations = NLM$iterations) }
+  if (MAX) {
+    if (hessian) {
+      OUT <- list(maximum = OPT, estimate = PROB.OPT,
+                  gradient = GRAD.OPT, hessian = HESS.OPT,
+                  code = NLM$code, iterations = NLM$iterations)
+      } else {
+      OUT <- list(maximum = OPT, estimate = PROB.OPT, gradient = GRAD.OPT,
+                  code = NLM$code, iterations = NLM$iterations) }
+  } else {
+    if (hessian) {
+      OUT <- list(minimum = OPT, estimate = PROB.OPT,
+                  gradient = GRAD.OPT, hessian = HESS.OPT,
+                  code = NLM$code, iterations = NLM$iterations)
+      } else {
+      OUT <- list(minimum = OPT, estimate = PROB.OPT, gradient = GRAD.OPT,
+                  code = NLM$code, iterations = NLM$iterations) } }
 
   #Give output
   OUT }
-
