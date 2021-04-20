@@ -259,28 +259,27 @@ nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
                     check.analyticals = TRUE)
 
   #Convert back to probability space
+  ESTIMATE <- c(eta_to_p(NLM$estimate))
   OPT      <- SGN*NLM$minimum
-  ESTIMATE <- eta_to_p(NLM$estimate)
-  PROB.OPT <- c(ESTIMATE)
-  GRAD.OPT <- SGN*attributes(f(PROB.OPT))$gradient
-  HESS.OPT <- SGN*attributes(f(PROB.OPT))$hessian
+  GRAD.OPT <- attributes(f(ESTIMATE))$gradient
+  HESS.OPT <- attributes(f(ESTIMATE))$hessian
 
   #Generate output list
   if (MAX) {
     if (hessian) {
-      OUT <- list(maximum = OPT, estimate = PROB.OPT,
+      OUT <- list(maximum = OPT, estimate = ESTIMATE,
                   gradient = GRAD.OPT, hessian = HESS.OPT,
                   code = NLM$code, iterations = NLM$iterations)
       } else {
-      OUT <- list(maximum = OPT, estimate = PROB.OPT, gradient = GRAD.OPT,
+      OUT <- list(maximum = OPT, estimate = ESTIMATE, gradient = GRAD.OPT,
                   code = NLM$code, iterations = NLM$iterations) }
   } else {
     if (hessian) {
-      OUT <- list(minimum = OPT, estimate = PROB.OPT,
+      OUT <- list(minimum = OPT, estimate = ESTIMATE,
                   gradient = GRAD.OPT, hessian = HESS.OPT,
                   code = NLM$code, iterations = NLM$iterations)
       } else {
-      OUT <- list(minimum = OPT, estimate = PROB.OPT, gradient = GRAD.OPT,
+      OUT <- list(minimum = OPT, estimate = ESTIMATE, gradient = GRAD.OPT,
                   code = NLM$code, iterations = NLM$iterations) } }
 
   #Give output
