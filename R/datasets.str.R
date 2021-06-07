@@ -6,24 +6,28 @@
 #' shows the user the strucure of all available datasets in a specified package or packages.  (If the user does not specify a \code{package})
 #' then the function searches over all available packages.
 #'
-#' @usage \code{datasets.str}
 #' @param package The package/packages containing the datasets of interest
-#' @return Print output showing the structure of all datasets
-
+#' @return A data frame listing available data sets, invisibly
+#'
+#' @examples
+#' datasets.str("datasets")
 datasets.str <- function(package = NULL) {
 
   if (missing(package)) { package <- .packages(all.available = TRUE) }
 
   #Create data frame listing available datasets
   ENV           <- new.env()
-  DATASETS      <- as.data.frame(data(package = package, envir = ENV)$results, stringsAsFactors = FALSE)[, c(1, 3, 4)]
-  DATASETS$Item <- sapply(strsplit(DATASETS$Item, split = ' ', fixed = TRUE), '[', 1)
+  DATASETS      <- as.data.frame(utils::data(package = package, envir = ENV)$results, stringsAsFactors = FALSE)[, c(1, 3, 4)]
+  DATASETS$dataset <- sub(".*[(]", "", sub("[)]$", "", DATASETS$Item))
+  DATASETS$Item <- sub(" .*", "", DATASETS$Item)
   DATASETS      <- DATASETS[order(DATASETS$Package, tolower(DATASETS$Item)),]
 
   #Print structure
   for (i in 1:nrow(DATASETS)) {
     DESC <- DATASETS[i, ]
-    data(list = DESC$Item, package = DESC$Package, envir = ENV)
+    data(list = DESC$dataset, package = DESC$Package, envir = ENV)
     DATA <- get(DESC$Item, envir = ENV)
-    message(DESC$Package[i], "  |  ", DESC$Item, "  |  ", DESC$Title)
-    message(str(DATA)) } }
+    message("\n", DESC$Package, "  |  ", DESC$Item, "  |  ", DESC$Title)
+    str(DATA, 1) }
+
+  invisible(DATA)}
