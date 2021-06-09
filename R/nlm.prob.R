@@ -22,14 +22,13 @@
 #' a wrapper to that function.  The additional inputs for this function are \code{prob.vectors}, \code{lambda} and \code{eta0max}.
 #' The function also adds an option \code{maximise} to conduct maximisation instead of minimisation.
 #'
-#' @usage \code{nlm.prob}
 #' @param f The objective function to be minimised; output should be a single numeric value.
 #' @param p Starting argument values for the minimisation.
 #' @param prob.vectors A list specifying which sets of elements are constrained to be a probability vector (each element in the list
 #' should be a vector specifying indices in the argument vector; elements cannot overlap into multiple probability vectors).
 #' @param lambda The tuning parameter used in the softmax transformation for the optimisation (a single positive numeric value).
 #' @param eta0max The maximum absolute value for the elements of eta0 (the starting value in the unconstrained optimisation problem).
-#' @param maximise/maximize Logical value; if \code{TRUE} the function maximises the objective function instead of mimimising.
+#' @param maximise Logical value; if \code{TRUE} the function maximises the objective function instead of mimimising.
 #' @param hessian Logical; if \code{TRUE} then the output of the function includes the Hessian of \code{f} at the minimising point.
 #' @param typsize An estimate of the size of each parameter at the minimum.
 #' @param fscale An estimate of the size of \code{f} at the minimum.
@@ -48,7 +47,13 @@
 #' @param iterlim A positive integer specifying the maximum number of iterations to be performed before the routine is terminated.
 #' @param check.analyticals Logical; if \code{TRUE} then the analytic gradients and Hessians (if supplied) are checked against numerical
 #' derivatives at the initial parameter values.  This can help detect incorrectly formulated gradients or Hessians.
+#' @param ... Additional arguments to be passed to \code{f} via \code{nlm}
+#' @param maximize Alternate spelling for convenience.
 #' @return A list showing the computed minimising point and minimum of \code{f} and other related information.
+#'
+#' @examples
+#' x <- rbinom(100, 1, .2)
+#' nlm.prob(function(p) sum(dbinom(x,1,p[2],log=TRUE)), c(.5, .5), maximise = TRUE)
 
 nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
                      eta0max = 1e10, maximise = FALSE, maximize = maximise,
@@ -103,8 +108,7 @@ nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
       warning("Specify 'maximise' or 'maximize' but not both") } else {
          stop("Error: specify 'maximise' or 'maximize' but not both") } }
   MAX <- maximize
-  if (!is.logical(MAX))                         { stop('Error: Input maximise/maximize should be a single logical value') }
-  if (length(MAX) != 1)                         { stop('Error: Input maximise/maximize should be a single logical value') }
+  if (!isTRUE(MAX) && ! isFALSE(MAX))            { stop('Error: Input maximise/maximize should be a single logical value') }
 
   #Convert input prob.vector to list of argument-indices
   #The object ARGS.INDEX is a list of argument indices
@@ -231,14 +235,14 @@ nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
 
     #Compute gradient (if available)
     GRAD.f <- SGN*attributes(GG)$gradient
-    if (!is.null(GRAD.f)) {
+    if (is.matrix(GRAD.f)) {
       GRAD.p <- attributes(PP)$gradient
       D1 <- GRAD.f %*% GRAD.p
       attr(GG, 'gradient') <- D1 }
 
     #Compute Hessian (if available)
     HESS.f <- SGN*attributes(GG)$hessian
-    if ((!is.null(GRAD.f))&(!is.null(HESS.f))) {
+    if ((is.matrix(GRAD.f))&&(is.matrix(HESS.f))) {
       HESS.p <- attributes(PP)$hessian
       T1 <- (t(GRAD.p) %*% (HESS.f %*% GRAD.p))
       T2 <- matrix(0, m-1, m-1)
@@ -256,7 +260,7 @@ nlm.prob <- function(f, p, prob.vectors = list(1:length(p)), ..., lambda = 1,
   NLM <- stats::nlm(f = OBJ, p = eta0, hessian = hessian, typsize = p_to_eta(typsize),
                     fscale = fscale, print.level = print.level, ndigit = ndigit,
                     gradtol = gradtol, stepmax = stepmax, steptol = steptol, iterlim = iterlim,
-                    check.analyticals = TRUE)
+                    check.analyticals = TRUE, ...)
 
   #Convert back to probability space
   ESTIMATE <- c(eta_to_p(NLM$estimate))

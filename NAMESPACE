@@ -1,4 +1,5 @@
 importFrom("stats", "as.formula")
+importFrom("utils", "data", "str")
 S3method("print", "data.mappings")
 S3method("plot", "data.mappings")
 exportPattern("^[[:alpha:]]+")
