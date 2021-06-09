@@ -1,28 +1,26 @@
 #' Softmax and inverse-softmax functions
 #'
-#' \code{softmax} returns the value of the softmax function
-#' \code{softmaxinv} returns the value of the inverse-softmax function
+#' \code{softmax} returns the value of the softmax function.
+#' \code{softmaxinv} returns the value of the inverse-softmax function.
 #'
 #' The softmax function is a bijective function that maps a real vector with length \code{m-1} to a probability vector
 #' with length \code{m} with all non-zero probabilities.  The softmax function is useful in a wide range of probability
 #' and statistical applications.  The present functions define the softmax function and its inverse, both with a tuning
 #' parameter.
 #'
-#' @usage \code{softmax}
 #' @param eta A numeric vector input
 #' @param lambda Tuning parameter (a single positive value)
 #' @param gradient Logical; if \code{TRUE} the output will include a \code{'gradient'} attribute
 #' @param hessian Logical; if \code{TRUE} the output will include a \code{'hessian'} attribute
 #' @return Value of the softmax function
 #'
-#' @usage \code{softmaxinv}
-#' @param p A probability vector (i.e., numeric vector of non-negative values that sum to one)
-#' @param lambda Tuning parameter (a single positive value)
-#' @param gradient Logical; if \code{TRUE} the output will include a \code{'gradient'} attribute
-#' @param hessian Logical; if \code{TRUE} the output will include a \code{'hessian'} attribute
-#' @return Value of the inverse-softmax function
+#' @examples
+#' softmax(5:7)
+#' softmaxinv(softmax(5:7))
 
 softmax <- function(eta, lambda = 1, gradient = FALSE, hessian = FALSE) {
+
+  stopifnot(requireNamespace("matrixStats", quietly = TRUE))
 
   #Compute the softmax function
   m     <- length(eta)+1
@@ -53,7 +51,8 @@ softmax <- function(eta, lambda = 1, gradient = FALSE, hessian = FALSE) {
   #Return the output
   SOFT }
 
-
+#' @param p A probability vector (i.e., numeric vector of non-negative values that sum to one)
+#' @rdname softmax
 softmaxinv <- function(p, lambda = 1, gradient = FALSE, hessian = FALSE) {
 
   #Compute the inverse-softmax function

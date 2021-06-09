@@ -10,10 +10,10 @@ Description: Data utility functions for use in probability and statistics.  Incl
   Also includes utilities to examine functional mappings between factor variables and other variables in a data set.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
 Imports:
   stats
 Suggests:
   ggplot2,
-  ggdag
+  ggdag,
+  matrixStats
 RoxygenNote: 7.1.1
