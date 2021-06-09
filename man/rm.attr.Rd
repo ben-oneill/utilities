@@ -31,6 +31,9 @@ you do not want to remove attributes from elements of a list (but still remove a
 level) you can set \code{list.levels = 0} to do this..
 }
 \examples{
-a <- structure(list(structure(1, x=2, names=3), list(0, structure(3, x=4, names=5))), x=3, names = 4)
+a <- structure(list(structure(1, x=2, names=3),
+               list(0, structure(3, x=4, names=5))),
+               x=3, names = 4)
 str(rm.attr(a, 1))
+
 }
