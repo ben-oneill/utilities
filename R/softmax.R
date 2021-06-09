@@ -58,7 +58,7 @@ softmaxinv <- function(p, lambda = 1, gradient = FALSE, hessian = FALSE) {
   #Compute the inverse-softmax function
   m <- length(p)
   if (m > 1) {
-    SOFTINV <- (log(p) - log(p[m]))[1:(m-1)]/lambda } else {
+    SOFTINV <- (base::log(p) - base::log(p[m]))[1:(m-1)]/lambda } else {
     SOFTINV <- numeric(0) }
 
   #Add the gradient (if required)
