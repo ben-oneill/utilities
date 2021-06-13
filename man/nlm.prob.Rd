@@ -39,9 +39,7 @@ should be a vector specifying indices in the argument vector; elements cannot ov
 
 \item{eta0max}{The maximum absolute value for the elements of eta0 (the starting value in the unconstrained optimisation problem).}
 
-\item{maximise}{Logical value; if \code{TRUE} the function maximises the objective function instead of mimimising.}
-
-\item{maximize}{Alternate spelling for convenience.}
+\item{maximise, maximize}{Logical value; if \code{TRUE} the function maximises the objective function instead of mimimising.}
 
 \item{hessian}{Logical; if \code{TRUE} then the output of the function includes the Hessian of \code{f} at the minimising point.}
 

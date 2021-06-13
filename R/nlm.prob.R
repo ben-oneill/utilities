@@ -28,7 +28,7 @@
 #' should be a vector specifying indices in the argument vector; elements cannot overlap into multiple probability vectors).
 #' @param lambda The tuning parameter used in the softmax transformation for the optimisation (a single positive numeric value).
 #' @param eta0max The maximum absolute value for the elements of eta0 (the starting value in the unconstrained optimisation problem).
-#' @param maximise Logical value; if \code{TRUE} the function maximises the objective function instead of mimimising.
+#' @param maximise,maximize Logical value; if \code{TRUE} the function maximises the objective function instead of mimimising.
 #' @param hessian Logical; if \code{TRUE} then the output of the function includes the Hessian of \code{f} at the minimising point.
 #' @param typsize An estimate of the size of each parameter at the minimum.
 #' @param fscale An estimate of the size of \code{f} at the minimum.
@@ -48,7 +48,6 @@
 #' @param check.analyticals Logical; if \code{TRUE} then the analytic gradients and Hessians (if supplied) are checked against numerical
 #' derivatives at the initial parameter values.  This can help detect incorrectly formulated gradients or Hessians.
 #' @param ... Additional arguments to be passed to \code{f} via \code{nlm}
-#' @param maximize Alternate spelling for convenience.
 #' @return A list showing the computed minimising point and minimum of \code{f} and other related information.
 #'
 #' @examples
