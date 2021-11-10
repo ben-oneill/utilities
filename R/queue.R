@@ -133,7 +133,8 @@ queue <- function(n, arrive, use.full, wait.max = NULL, revive = 0,
   R <- c(rep(r, K) %*% MATRIX)
   BEGIN <- rep(0, n)
   END   <- rep(T, n)
-  for (i in 1:n) { END[i] <- max(L[MATRIX[,i] == 1]) }
+  for (i in 1:n) {
+    if (sum(MATRIX[,i] == 1) > 0) { END[i] <- max(L[MATRIX[,i] == 1]) } }
   FACILITY <- data.frame(open = BEGIN, end.service = END, use = U, revive = R)
   rownames(FACILITY) <- sprintf('F[%s]', 1:n)
 
