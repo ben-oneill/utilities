@@ -44,13 +44,9 @@ queue <- function(n, arrive, use.full, wait.max = NULL, revive = 0,
   if (min(n) <= 0)                   stop('Error: Input n should be a positive integer')
   if (max(n) == Inf)                 stop('Error: Input n should be a positive integer (not infinity)')
   
-  #Check input wait.max
-  if (!is.null(wait.max)) {
-    if (!is.numeric(wait.max))       stop('Error: Input wait.max should be numeric')
-    if (length(arrive) != length(wait.max))   stop('Error: Inputs arrive and use.full must have same length')
-    if (min(wait.max) < 0)           stop('Error: Input wait.max should contain non-negative values')
-  } else { 
-    wait.max = rep(Inf, length(arrive)) }
+  #Check input wait.max and create maximum-waiting-time matrix
+  K <- length(arrive)
+  WW <- convert.wait.max(wait.max, K)
   
   #Check inputs for service facility
   if (!is.numeric(revive))           stop('Error: Input revive should be numeric')
@@ -71,18 +67,16 @@ queue <- function(n, arrive, use.full, wait.max = NULL, revive = 0,
   #Set the parameters
   t   <- arrive
   uu  <- use.full
-  ww  <- wait.max
+  ww  <- rep(0, K)
   ORD <- order(t)
   t   <- t[ORD]
   uu  <- uu[ORD]
-  ww  <- ww[ORD]
   r   <- revive
   T1  <- close.arrive
   T2  <- close.service
   T3  <- close.full
 
   #Set output vectors
-  K  <- length(t)
   w  <- numeric(K)
   u  <- numeric(K)
   F  <- numeric(K)
@@ -92,6 +86,14 @@ queue <- function(n, arrive, use.full, wait.max = NULL, revive = 0,
   
   #Set delay matrix
   D  <- matrix(0, nrow = K+1, ncol = n)
+  rownames(D) <- sprintf('Arrival[%s]', 0:K)
+  colnames(D) <- sprintf('Delay[%s]', 1:n)
+  
+  #Set queue-priority matrix
+  QP <- matrix(0, nrow = K, ncol = K)
+  QP[1,1] <- 1
+  rownames(QP) <- sprintf('User[%s]', 1:K)
+  colnames(QP) <- sprintf('Priority[%s]', 1:K)
 
   #Compute user outputs
   TIME <- 0
@@ -104,6 +106,12 @@ queue <- function(n, arrive, use.full, wait.max = NULL, revive = 0,
     #Update user statistics
     if (t[k] < T1) {
       w.hat  <- min(D[k+1, ])
+      if (k > 1) {
+        end.queue.times <- t[1:(k-1)] + w[1:(k-1)]
+        for (kk in 1:k) {
+          QP[k, kk] <- 1 + sum(end.queue.times > t[k] + WW[k,kk]) } }
+      kk.hat <- max(which(QP[k, ] >= 1:K))
+      ww[k] <- WW[k, kk.hat]
       w.ss   <- min(ww[k], T2-TIME)
       w[k]   <- min(w.hat, w.ss)
       SERVED <- (w.hat < w.ss)
@@ -139,12 +147,50 @@ queue <- function(n, arrive, use.full, wait.max = NULL, revive = 0,
   rownames(FACILITY) <- sprintf('F[%s]', 1:n)
 
   #Generate output
-  OUT  <- list(users = USER, facilities = FACILITY, users.facilities = MATRIX, n = n,
+  OUT  <- list(users = USER, facilities = FACILITY, users.facilities = MATRIX, delay = D, n = n,
                revival = r, close.arrive = T1, close.service = T2, close.full = T3)
   class(OUT) <- c('queue', 'list')
 
   #Return output
   OUT }
+
+
+convert.wait.max <- function(wait.max = NULL, K) {
+  
+  #Check input wait.max
+  if (!is.null(wait.max)) {
+    
+    #If wait.max is a vector then generate numeric matrix WW
+    if (is.vector(wait.max)) { 
+      if (is.numeric(wait.max)) {
+        if (length(wait.max) != K)     stop('Error: If input wait.max is a vector it should the same length as the arrival vector')
+        WW <- matrix(rep(wait.max, K), nrow = K, ncol = K, byrow = TRUE) } }
+    
+    #If wait.max is a function then generate numeric matrix WW
+    if ('function' %in% class(wait.max)) {
+      WW <- matrix(0, nrow = K, ncol = K)
+      for (k in 1:K) { 
+        WW[, k] <- wait.max(k) } }
+
+    #If wait.max is a matrix then it is numeric matrix WW
+    if (is.vector(wait.max)) { 
+      WW <- wait.max
+      if (is.numeric(WW))            stop('Error: If input wait.max is a matrix it should be numeric')
+      if (nrow(WW) != K)             stop('Error: If input wait.max is a matrix it should have one row per user')
+      if (ncol(WW) != K)             stop('Error: If input wait.max is a matrix it should have one row per user') }
+    
+  } else {
+    
+    #If wait.max is null then create matrix WW with infinite maximum waiting-times
+    WW <- matrix(Inf, nrow = K, ncol = K) }
+    
+    #Check that rows of WW are non-increasing
+    for (k in 1:K) {
+      if (k > 1) {
+      for (kk in 2:k) {
+        if (WW[kk] > WW[kk-1])       stop(paste0('Error: Row ', k, ' of wait.max matrix is decreasing')) } } }
+  
+  WW }
 
 
 print.queue <- function(OBJECT) {
