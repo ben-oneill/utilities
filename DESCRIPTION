@@ -15,5 +15,7 @@ Imports:
 Suggests:
   ggplot2,
   ggdag,
+  gmp,
+  gridExtra,
   matrixStats
 RoxygenNote: 7.1.1

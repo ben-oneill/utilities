@@ -7,11 +7,14 @@
 #' vector of the prime-factor decomposition (PFD) values, written in a condensed character form.  The function also converts back from the PFD
 #' form to an integer/bigz vector.
 #'
-#' @usage \code{PFD}
+#' This function depends on the gmp package.
+#'
 #' @param x An input vector/matrix/array (can be a vector of integers/bigz or PFDs)
 #' @return If the input is integer/bigz then the output is the PFD; if the input is PFD then the output is integer/bigz
 
 PFD <- function(x) {
+
+  stopifnot("PFD() depends on the `gmp` package."=requireNamespace("gmp"))
 
   #Convert PFD to integer/bigz
   if ('prime.factor.decomposition' %in% class(x)) {
@@ -76,25 +79,27 @@ PFD <- function(x) {
   #Give output
   OUT }
 
-
-print.prime.factor.decomposition <- function (OBJECT, quote = FALSE, ...) {
+#' @rdname PFD
+#' @param quote logical, indicating whether or not strings should be printed with surrounding quotes.
+#' @param ... further arguments passed to or from other methods.
+print.prime.factor.decomposition <- function (x, quote = FALSE, ...) {
 
   #Get object types
-  n      <- length(OBJECT)
-  DIM    <- attr(OBJECT, 'dim')
+  n      <- length(x)
+  DIM    <- attr(x, 'dim')
   DIMLAB <- paste(DIM, collapse = ' x ')
 
   if (n > 0) {
     if (is.null(DIM)) {
-      cat('Prime Factor Decomposition (\'PFD\') vector of length', length(OBJECT), '\n')
-      print(as.character(OBJECT), quote = quote, ...) } else {
+      cat('Prime Factor Decomposition (\'PFD\') vector of length', length(x), '\n')
+      print(as.character(x), quote = quote, ...) } else {
     if (length(DIM) == 1) {
       cat('Prime Factor Decomposition (\'PFD\') matrix of dimensions', DIMLAB, '\n')
-      print(array(as.character(OBJECT), dim = DIM), quote = quote, ...) }
+      print(array(as.character(x), dim = DIM), quote = quote, ...) }
     if (length(DIM) > 1) {
       cat('Prime Factor Decomposition (\'PFD\') array of dimensions', DIMLAB, '\n')
-      print(array(as.character(OBJECT), dim = DIM), quote = quote, ...) } }
+      print(array(as.character(x), dim = DIM), quote = quote, ...) } }
   } else {
     cat('Prime Factor Decomposition (\'PFD\') with no elements\n') }
 
-  invisible(OBJECT) }
+  invisible(x) }
