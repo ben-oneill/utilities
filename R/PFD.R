@@ -11,7 +11,10 @@
 #'
 #' @param x An input vector/matrix/array (can be a vector of integers/bigz or PFDs)
 #' @return If the input is integer/bigz then the output is the PFD; if the input is PFD then the output is integer/bigz
-
+#'
+#' @examples
+#' PFD(1:10)
+#' stopifnot(all.equal(1:100, PFD(PFD(1:100))))
 PFD <- function(x) {
 
   stopifnot("PFD() depends on the `gmp` package."=requireNamespace("gmp"))

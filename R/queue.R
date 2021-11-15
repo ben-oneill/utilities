@@ -26,6 +26,12 @@
 #' @param close.full Closure-time for all services (all existing services are terminated)
 #' @return If all inputs are correctly specified then the function will return a list of class \code{queue}
 #' containing queuing information for the users and service facilities
+#'
+#' @examples
+#' q <- queue(2, 4:6, 7:9)
+#' summary(q)
+#' plot(q)
+#' plot(summary(q))
 
 queue <- function(n, arrive, use.full, wait.max = NULL, revive = 0,
                   close.arrive = Inf, close.service = Inf, close.full = Inf) {
@@ -45,7 +51,7 @@ queue <- function(n, arrive, use.full, wait.max = NULL, revive = 0,
 
   #Check input wait.max and create maximum-waiting-time matrix
   K <- length(arrive)
-  WW <- convert.wait.max(wait.max, K)
+  WW <- .convert.wait.max(wait.max, K)
 
   #Check inputs for service facility
   if (!is.numeric(revive))           stop('Error: Input revive should be numeric')
@@ -154,7 +160,7 @@ queue <- function(n, arrive, use.full, wait.max = NULL, revive = 0,
   OUT }
 
 
-convert.wait.max <- function(wait.max = NULL, K) {
+.convert.wait.max <- function(wait.max = NULL, K) {
 
   #Check input wait.max
   if (!is.null(wait.max)) {
@@ -191,7 +197,9 @@ convert.wait.max <- function(wait.max = NULL, K) {
 
   WW }
 
-
+#' @rdname queue
+#' @param x,object a \code{queue} object
+#' @param ... further arguments passed to or from other methods.
 print.queue <- function(x, ...) {
 
   #Check input
@@ -233,12 +241,13 @@ print.queue <- function(x, ...) {
   print(FACILITY)
   cat('\n') }
 
-
+#' @rdname queue
+#' @param print,gap,line.width,line.colors,line.colours plotting paramaters
 plot.queue <- function(x, print = TRUE, gap = NULL, line.width = 2,
                        line.colors = NULL, line.colours = line.colors, ...) {
 
   #Check inputs
-  if (!('queue' %in% class(x)))     stop('Error: Object must have class \'queue\'' )
+  if (!inherits(x, 'queue'))     stop('Error: Object must have class \'queue\'' )
   if (!is.logical(print))                stop('Error: Input print should be a logical value')
   if (length(print) != 1)                stop('Error: Input print should be a single logical value')
   if (!is.null(gap)) {
@@ -302,17 +311,17 @@ plot.queue <- function(x, print = TRUE, gap = NULL, line.width = 2,
   #Create the plot
   SIZE <- line.width
   PLOT <- ggplot2::ggplot(data = PLOTDATA) +
-    ggplot2::geom_segment(ggplot2::aes(x = arrive, xend = service,
-                                       y = user, yend = user, colour = 'Waiting'), size = SIZE) +
-    ggplot2::geom_segment(ggplot2::aes(x = service, xend = leave,
-                                       y = user, yend = user, colour = 'Service'), size = SIZE) +
-    ggplot2::geom_segment(ggplot2::aes(x = leave, xend = unserve,
-                                       y = user, yend = user, colour = 'Unserved'), size = SIZE) +
-    ggplot2::geom_segment(ggplot2::aes(x = service, xend = leave,
-                                       y = K + GAP + facility, yend = K + GAP + facility,
+    ggplot2::geom_segment(ggplot2::aes(x = !!quote(arrive),  xend = !!quote(service),
+                                       y = !!quote(user),    yend = !!quote(user), colour = 'Waiting'), size = SIZE) +
+    ggplot2::geom_segment(ggplot2::aes(x = !!quote(service), xend = !!quote(leave),
+                                       y = !!quote(user),    yend = !!quote(user), colour = 'Service'), size = SIZE) +
+    ggplot2::geom_segment(ggplot2::aes(x = !!quote(leave),   xend = !!quote(unserve),
+                                       y = !!quote(user),    yend = !!quote(user), colour = 'Unserved'), size = SIZE) +
+    ggplot2::geom_segment(ggplot2::aes(x = !!quote(service), xend = !!quote(leave),
+                                       y = !!quote(K + GAP + facility), yend = !!quote(K + GAP + facility),
                                        colour = 'Service'), size = SIZE, data = PLOTDATA.REDUCED) +
-    ggplot2::geom_segment(ggplot2::aes(x = leave, xend = revive,
-                                       y = K + GAP + facility, yend = K + GAP + facility,
+    ggplot2::geom_segment(ggplot2::aes(x = !!quote(leave), xend = !!quote(revive),
+                                       y = !!quote(K + GAP + facility), yend = !!quote(K + GAP + facility),
                                        colour = 'Revival'), size = SIZE, data = PLOTDATA.REDUCED) +
     ggplot2::scale_colour_manual(name = '', values = COLOURS) +
     ggplot2::scale_y_reverse(breaks = c(1:K, (K+GAP+1):(K+GAP+n)),
@@ -332,32 +341,34 @@ plot.queue <- function(x, print = TRUE, gap = NULL, line.width = 2,
   #Add lines for closure-times (unless these are infinite)
   if (T1 < Inf) {
     LINE1   <- data.frame(xintercept = T1, label = factor('Close-time (new arrivals)'))
-    PLOT <- PLOT + ggplot2::geom_vline(ggplot2::aes(xintercept = xintercept,
-                                                    linetype = label), LINE1) }
+    PLOT <- PLOT + ggplot2::geom_vline(ggplot2::aes(xintercept = !!quote(xintercept),
+                                                    linetype = !!quote(label)), LINE1) }
   if (T2 < Inf) {
     LINE2   <- data.frame(xintercept = T2, label = factor('Close-time (new service)'))
-    PLOT <- PLOT + ggplot2::geom_vline(ggplot2::aes(xintercept = xintercept,
-                                                    linetype = label), LINE2) }
+    PLOT <- PLOT + ggplot2::geom_vline(ggplot2::aes(xintercept = !!quote(xintercept),
+                                                    linetype = !!quote(label)), LINE2) }
   if (T3 < Inf) {
     LINE3   <- data.frame(xintercept = T3, label = factor('Close-time (all service)'))
-    PLOT <- PLOT + ggplot2::geom_vline(ggplot2::aes(xintercept = xintercept,
-                                                    linetype = label), LINE3) }
+    PLOT <- PLOT + ggplot2::geom_vline(ggplot2::aes(xintercept = !!quote(xintercept),
+                                                    linetype = !!quote(label)), LINE3) }
 
   #Print/return the plot
   if (print) { print(PLOT) }
   PLOT }
 
-
+#' @rdname queue
+#' @param probs summary quantiles to be included in output.
+#' @param probs.decimal.places rounds the output to specified number of decimal places.
 summary.queue <- function(object, probs = NULL, probs.decimal.places = 2, ...) {
 
   #Check input
-  if (!('queue' %in% class(object)))     stop('Error: Object must have class \'queue\'' )
+  if (!inherits(object, 'queue'))     stop('Error: Object must have class \'queue\'' )
   if (is.null(probs)) {
     probs <- c(0, 0.25, 0.5, 0.75, 1)
   } else {
     if (!is.numeric(probs))              stop('Error: Input probs must be a vector of probabilities')
-    if (min(prob) < 0)                   stop('Error: Input probs must be a vector of probabilities')
-    if (max(prob) > 1)                   stop('Error: Input probs must be a vector of probabilities') }
+    if (min(probs) < 0)                   stop('Error: Input probs must be a vector of probabilities')
+    if (max(probs) > 1)                   stop('Error: Input probs must be a vector of probabilities') }
   if (!is.numeric(probs.decimal.places)) stop('Error: Input probs.decimal.places should be a non-negative integer')
   if (length(probs.decimal.places) != 1) stop('Error: Input probs.decimal.places should be a non-negative integer')
   if (as.integer(probs.decimal.places) != probs.decimal.places)
@@ -421,7 +432,7 @@ summary.queue <- function(object, probs = NULL, probs.decimal.places = 2, ...) {
   #Return output
   OUT }
 
-
+#' @rdname queue
 print.summary.queue <- function(x, ...) {
 
   #Check input
@@ -455,7 +466,9 @@ print.summary.queue <- function(x, ...) {
   print(STATS[, 1:5])
   cat('\n') }
 
-
+#' @rdname queue
+#' @param count absolute or relative frequencies
+#' @param bar.colors,bar.colours plotting parameters
 plot.summary.queue <- function(x, print = TRUE, count = FALSE,
                                bar.colors = NULL, bar.colours = bar.colors, ...) {
 
@@ -498,9 +511,9 @@ plot.summary.queue <- function(x, print = TRUE, count = FALSE,
                                         levels = c('Waiting', 'Service', 'Unserved')))
 
   #Generate plot
-  PLOT <- ggplot2::ggplot(ggplot2::aes(x = Value, fill = Type), data = PLOTDATA) +
-          { if (count)  ggplot2::geom_histogram(ggplot2::aes(y = ..count..), bins = 50) } +
-          { if (!count) ggplot2::geom_histogram(ggplot2::aes(y = ..count../sum(..count..)), bins = 50) } +
+  PLOT <- ggplot2::ggplot(ggplot2::aes(x = !!quote(Value), fill = !!quote(Type)), data = PLOTDATA) +
+          { if (count)  ggplot2::geom_histogram(ggplot2::aes(y = !!quote(..count..)), bins = 50) } +
+          { if (!count) ggplot2::geom_histogram(ggplot2::aes(y = !!quote(..count../sum(..count..))), bins = 50) } +
           ggplot2::facet_wrap(~ Type, ncol = 1) +
           ggplot2::scale_fill_manual(name = '', values = COLOURS) +
           ggplot2::theme(plot.title    = ggplot2::element_text(hjust = 0.5, size = 14, face = 'bold',

@@ -2,6 +2,11 @@
 % Please edit documentation in R/queue.R
 \name{queue}
 \alias{queue}
+\alias{print.queue}
+\alias{plot.queue}
+\alias{summary.queue}
+\alias{print.summary.queue}
+\alias{plot.summary.queue}
 \title{Generate queuing information from arrival and use times}
 \usage{
 queue(
@@ -13,6 +18,31 @@ queue(
   close.arrive = Inf,
   close.service = Inf,
   close.full = Inf
+)
+
+\method{print}{queue}(x, ...)
+
+\method{plot}{queue}(
+  x,
+  print = TRUE,
+  gap = NULL,
+  line.width = 2,
+  line.colors = NULL,
+  line.colours = line.colors,
+  ...
+)
+
+\method{summary}{queue}(object, probs = NULL, probs.decimal.places = 2, ...)
+
+\method{print}{summary.queue}(x, ...)
+
+\method{plot}{summary.queue}(
+  x,
+  print = TRUE,
+  count = FALSE,
+  bar.colors = NULL,
+  bar.colours = bar.colors,
+  ...
 )
 }
 \arguments{
@@ -31,6 +61,20 @@ queue(
 \item{close.service}{Closure-time for new services (no new services allowed)}
 
 \item{close.full}{Closure-time for all services (all existing services are terminated)}
+
+\item{x, object}{a \code{queue} object}
+
+\item{...}{further arguments passed to or from other methods.}
+
+\item{print, gap, line.width, line.colors, line.colours}{plotting paramaters}
+
+\item{probs}{summary quantiles to be included in output.}
+
+\item{probs.decimal.places}{rounds the output to specified number of decimal places.}
+
+\item{count}{absolute or relative frequencies}
+
+\item{bar.colors, bar.colours}{plotting parameters}
 }
 \value{
 If all inputs are correctly specified then the function will return a list of class \code{queue}
@@ -53,4 +97,10 @@ times on new arrivals, new services, or termination of services.
 event that more than one service facility is available for a user then the user is allocated to facilities
 first-to-last based on the facility number (i.e., the allocation favours the earlier facilities and it is
 not exchangeable with respect to the facility number).
+}
+\examples{
+q <- queue(2, 4:6, 7:9)
+summary(q)
+plot(q)
+plot(summary(q))
 }

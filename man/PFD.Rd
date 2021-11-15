@@ -30,3 +30,7 @@ form to an integer/bigz vector.
 
 This function depends on the gmp package.
 }
+\examples{
+PFD(1:10)
+stopifnot(all.equal(1:100, PFD(PFD(1:100))))
+}
