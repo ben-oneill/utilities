@@ -60,7 +60,7 @@ PFD <- function(x) {
         OUT[i]  <- '|1|'
       } else {
         FACTORS <- gmp::factorize(xx[i])
-        PRIMES  <- unique(FACTORS)
+        PRIMES  <- sort(unique(FACTORS))
         K       <- length(PRIMES)
         MULTS   <- integer(K)
         STRING  <- character(K)
