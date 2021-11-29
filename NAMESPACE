@@ -1,5 +1,18 @@
-importFrom("stats", "as.formula")
-importFrom("utils", "data", "str")
+importFrom("grDevices", "colours")
+
+importFrom("stats", "as.formula", "quantile", "sd")
+importFrom("utils", "data", "str", "read.table")
+
+
 S3method("print", "data.mappings")
 S3method("plot", "data.mappings")
+
+S3method("print", "prime.factor.decomposition")
+
+S3method("print", "queue")
+S3method("plot", "queue")
+S3method("summary", "queue")
+S3method("print", "summary.queue")
+S3method("plot", "summary.queue")
+
 exportPattern("^[[:alpha:]]+")
