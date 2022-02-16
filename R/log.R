@@ -17,14 +17,24 @@
 #' log10(-10, TRUE, TRUE)
 
 log <- function(x, base = exp(1), gradient = FALSE, hessian = FALSE) {
+  
+  #Compute natural logarithm and adjustment
   LOG <- base::log(as.complex(x))
   ADJ <- 1/base::log(as.complex(base))
   LOG <- ADJ*LOG
-  LOG[(x == 0)] <- as.complex(-Inf)
   if (all(Im(LOG) == 0)) { LOG <- Re(LOG) }
   if (all(Im(ADJ) == 0)) { ADJ <- Re(ADJ) }
+  
+  #Deal with special cases
+  LOG[(x == 0)]    <- as.complex(-Inf)
+  LOG[(x == Inf)]  <- as.complex(Inf)
+  LOG[(x == -Inf)] <- Inf + pi*(0+1i)
+  
+  #Add gradient and Hessian
   if (gradient) { attr(LOG, 'gradient') <- ADJ*(1/x) }
   if (hessian)  { attr(LOG, 'hessian')  <- -ADJ/(x^2) }
+  
+  #Return value
   LOG }
 
 #' @rdname log
