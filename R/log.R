@@ -19,7 +19,7 @@
 log <- function(x, base = exp(1), gradient = FALSE, hessian = FALSE) {
   LOG <- base::log(as.complex(x), base = base)
   if (all(Im(LOG) == 0)) { LOG <- Re(LOG) }
-  ADJ <- 1/base::log(base)
+  ADJ <- 1/base::log(as.complex(base))
   if (all(Im(ADJ) == 0)) { ADJ <- Re(ADJ) }
   if (gradient) { attr(LOG, 'gradient') <- ADJ*(1/x) }
   if (hessian)  { attr(LOG, 'hessian')  <- -ADJ/(x^2) }
