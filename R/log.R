@@ -17,9 +17,11 @@
 #' log10(-10, TRUE, TRUE)
 
 log <- function(x, base = exp(1), gradient = FALSE, hessian = FALSE) {
-  LOG <- base::log(as.complex(x), base = base)
-  if (all(Im(LOG) == 0)) { LOG <- Re(LOG) }
+  LOG <- base::log(as.complex(x))
   ADJ <- 1/base::log(as.complex(base))
+  LOG <- ADJ*LOG
+  LOG[(x == 0)] <- as.complex(-Inf)
+  if (all(Im(LOG) == 0)) { LOG <- Re(LOG) }
   if (all(Im(ADJ) == 0)) { ADJ <- Re(ADJ) }
   if (gradient) { attr(LOG, 'gradient') <- ADJ*(1/x) }
   if (hessian)  { attr(LOG, 'hessian')  <- -ADJ/(x^2) }
