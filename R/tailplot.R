@@ -25,7 +25,13 @@
 #' De Sousa, B. and Michailidis, G. (2004) A Diagnostic Plot for Estimating the Tail Index of a
 #' Distribution.  Journal of Computational and Graphical Statistics 13(4), pp. 1-22.
 #'
-#' @usage \code{tailplot}
+#' @usage \code{tailplot(x, tail.prop = 0.05, left = TRUE, right = TRUE,
+#'        show.lines = TRUE, lines = 16, line.order = 3,
+#'        tail.plot = TRUE, hill.plot = FALSE, dsm.plot = FALSE,
+#'        point.size = 3, point.alpha = 0.4,
+#'        point.color = NULL, point.colour = point.color,
+#'        line.color  = NULL, line.colour  = line.color,
+#'        ytop.mult.left = 3, ytop.mult.right = 3)}
 #' @param x Data vector (numeric)
 #' @param tail.prop The proportion of values to use in each tail
 #' @param left Logical; if \code{TRUE} the tail plot includes a plot for the left tail
