@@ -2,8 +2,10 @@
 #'
 #' \code{log} returns the logarithm of the input
 #'
-#' This version of the logarithm function allows both numeric and complex inputs, including negative numeric values.  If the output of the
-#' logarithm has no complex part then the output is given as a numeric value.  It also allows the user to generate the gradient and Hessian.
+#' The logarithm function in base \code{R} accomodates complex numbers but it does not accomodate negative values (which is strange).  The
+#' pressent version of the logarithm function allows both numeric and complex inputs, including negative numeric values.  For negative inputs
+#' this function gives the princpal complex logarithm of the input value.  If the output of the logarithm has no complex part then the output 
+#' is given as a numeric value.  This function also allows the user to generate the gradient and Hessian.
 #'
 #' @param x An input value (numeric/complex scalar or vector)
 #' @param base The base for the logarithm (a positive scalar value)
