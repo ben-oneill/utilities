@@ -28,7 +28,7 @@ log <- function(x, base = exp(1), gradient = FALSE, hessian = FALSE) {
   #Deal with special cases
   LOG[(x == 0)]    <- as.complex(-Inf)
   LOG[(x == Inf)]  <- as.complex(Inf)
-  LOG[(x == -Inf)] <- Inf + pi*(0+1i)
+  LOG[(x == -Inf)] <- complex(real = Inf, imaginary = pi)
     
   #Convert back to numeric if there are no complex values
   if (all(Im(LOG) == 0)) { LOG <- Re(LOG) }
