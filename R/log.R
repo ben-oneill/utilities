@@ -18,17 +18,19 @@
 
 log <- function(x, base = exp(1), gradient = FALSE, hessian = FALSE) {
   
-  #Compute natural logarithm and adjustment
+  #Compute natural logarithm and adjustment (allowing for negative/complex inputs)
   LOG <- base::log(as.complex(x))
   ADJ <- 1/base::log(as.complex(base))
   LOG <- ADJ*LOG
-  if (all(Im(LOG) == 0)) { LOG <- Re(LOG) }
-  if (all(Im(ADJ) == 0)) { ADJ <- Re(ADJ) }
   
   #Deal with special cases
   LOG[(x == 0)]    <- as.complex(-Inf)
   LOG[(x == Inf)]  <- as.complex(Inf)
   LOG[(x == -Inf)] <- Inf + pi*(0+1i)
+    
+  #Convert back to numeric if there are no complex values
+  if (all(Im(LOG) == 0)) { LOG <- Re(LOG) }
+  if (all(Im(ADJ) == 0)) { ADJ <- Re(ADJ) }
   
   #Add gradient and Hessian
   if (gradient) { attr(LOG, 'gradient') <- ADJ*(1/x) }
