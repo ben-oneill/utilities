@@ -246,8 +246,7 @@ print.kde <- function(object, digits = 6) {
         'using the kernel of the normal distribution \n')
   } else {
     cat('  Computed from', k, 'data points in the input', paste0('\'', data.name, '\''),
-        'using the kernel of the T-distribution with ', df,
-        'degrees-of-freedom \n') }
+        'using the kernel of the T-distribution with', df, 'degrees-of-freedom \n') }
   if (weighted) {
     cat('  KDE uses weights from input', paste0('\'', weights.name, '\''), '\n') }
 
