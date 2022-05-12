@@ -291,7 +291,8 @@ print.kde <- function(object, digits = 6) {
       '     Random generation function:        ', nn[4], '\n', '\n') }
 
 
-plot.kde <- function(object, digits = 6, n = 512, cut = 3) {
+plot.kde <- function(object, digits = 6, n = 512, cut = 4,
+                     fill.colour = 'dodgerblue', fill.color = fill.colour) {
 
   #Check object class
   if (!('kde' %in% class(object)))    stop('Error: This plot method is only used for objects of class \'kde\'')
@@ -308,6 +309,11 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 3) {
   if (length(cut) != 1)               stop('Error: Input cut should be a single numeric value')
   if (min(cut) <= 0)                  stop('Error: Input cut must be positive')
 
+  #Check fill.colour/color
+  if (length(fill.colour) != 1)       stop('Error: Input fill.colour should be a single colour')
+  if (length(fill.color) != 1)        stop('Error: Input fill.color should be a single colour')
+  if (!fill.color %in% colours())     stop('Error: Input fill.colour/color must be in \'colours()\'')
+
   #Extract information
   df   <- object$df
   bw   <- object$bandwidth
@@ -320,6 +326,7 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 3) {
   xmax <- max(data) + bw*cut
   xx   <- xmin + (xmax-xmin)*((1:n)-1)/(n-1)
   yy   <- dens(xx)
+  zz   <- rep(0, n)
 
   #Create the subtitle
   if (band.est) { EEE <- 'estimated bandwidth'} else {
@@ -336,6 +343,7 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 3) {
        xlab = 'Value', ylab = 'Density')
   title(main = 'Kernel Density Estimator')
   mtext(side = 3, line = 0.25, cex = 0.8, SUBTITLE)
+  polygon(c(xx, rev(xx)), c(zz, rev(yy)), col = fill.color)
 
   #Save the plot
   PLOT <- recordPlot()
