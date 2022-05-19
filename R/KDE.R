@@ -4,7 +4,8 @@
 #'
 #' The kernel density estimator for a set of input data is obtained by taking a mixture distribution
 #' consisting of a (possibly weighted) combination of kernels.  In this function we compute the KDE
-#' using the kernel of the T-distribution.  The degrees-of-freedom and the bandwidth for the KDE can
+#' using the kernel of the T-distribution; the function can also estimate a discretised version of the
+#' KDE, taken over the integers, if required.  The degrees-of-freedom and the bandwidth for the KDE can
 #' be specified in the inputs; if they are not specified then they are estimated using leave-one-out
 #' maximum-likelihood estimation (LOO-MLE).  The output of the function is a list of class \code{kde}
 #' that contains the probability functions for the KDE and associated information.  The output object
@@ -29,12 +30,17 @@
 #' @param df.norm Maximum recognised value for the degrees-of-freedom; rounded up to Inf if above this value
 #' @param density.name Name of the KDE distribution; used for naming of the probability functions (a character string)
 #' @param value.name Name of the values in the data; used for naming the plot of the KDE
+#' @param discrete Logical; if \code{TRUE} the function produces a discrete KDE over the integers
+#' @param discrete.warn Logical; if \code{TRUE} the function gives a warning if non-discrete data is used to produce a discrete KDE
 #' @param to.environment Logical; if \code{TRUE} the probability functions are attached to the global environment
+#' @param envir The environment where the probability functions are loaded (if \code{to.environment} is \code{TRUE})
 #' @return A \code{kde} object containing the probability functions for the kernel density estimator
 
 KDE <- function (data, na.rm = FALSE, weights = NULL,
                  bandwidth = NULL, df = Inf, df.norm = 1000,
-                 density.name = 'kde', value.name = 'Value', to.environment = FALSE) {
+                 density.name = 'kde', value.name = 'Value',
+                 discrete = FALSE, discrete.warn = TRUE,
+                 to.environment = FALSE, envir = .GlobalEnv) {
 
   #Get preliminary call/name information
   CALL         <- sys.call()
@@ -72,6 +78,15 @@ KDE <- function (data, na.rm = FALSE, weights = NULL,
   if (length(df.norm) != 1)               stop('Error: Input df.norm should be a single numeric value')
   if (min(df.norm) < 0)                   stop('Error: Input df.norm cannot be negative')
 
+  #Check discrete
+  if (!is.logical(discrete))              stop('Error: Input discrete should be a logical value')
+  if (length(discrete) != 1)              stop('Error: Input discrete should be a single logical value')
+  if (!is.logical(discrete.warn))         stop('Error: Input discrete.warn should be a logical value')
+  if (length(discrete.warn) != 1)         stop('Error: Input discrete.warn should be a single logical value')
+  if ((discrete)&(discrete.warn)) {
+    if (any(data != as.integer(data))) {
+      warning('Non-integer data used to produce a discrete KDE over the integers') } }
+
   #Check other inputs
   if (!is.character(density.name))        stop('Error: Input density.name should be a character value')
   if (length(density.name) != 1)          stop('Error: Input density.name should be a single character value')
@@ -79,6 +94,7 @@ KDE <- function (data, na.rm = FALSE, weights = NULL,
   if (length(value.name) != 1)            stop('Error: Input value.name should be a single character value')
   if (!is.logical(to.environment))        stop('Error: Input to.environment should be a logical value')
   if (length(to.environment) != 1)        stop('Error: Input to.environment should be a single logical value')
+  if (!is.environment(envir))             stop('Error: Input envir should be an environment')
 
   ############################################################################################################
   ########################################## Set the data and weights ########################################
@@ -142,10 +158,11 @@ KDE <- function (data, na.rm = FALSE, weights = NULL,
   ############################################################################################################
 
   #Create output list
-  OUT <- vector(mode = 'list', length = 16)
+  OUT <- vector(mode = 'list', length = 18)
   names(OUT)[1:4]  <- PROB.NAMES <- paste0(c('d', 'p', 'q', 'r'), density.name)
-  names(OUT)[5:16] <- c('data.name', 'data', 'weighted', 'weights.name', 'weights',
-                        'bandwidth', 'bandwidth.est', 'df', 'df.est', 'call', 'to.environment', 'value.name')
+  names(OUT)[5:18] <- c('data.name', 'data', 'weighted', 'weights.name', 'weights',
+                        'bandwidth', 'bandwidth.est', 'df', 'df.est', 'call', 'discrete',
+                        'to.environment', 'envir', 'value.name')
   OUT[[5]]   <- DATA.NAME
   OUT[[6]]   <- DATA
   OUT[[7]]   <- WEIGHTED
@@ -156,127 +173,29 @@ KDE <- function (data, na.rm = FALSE, weights = NULL,
   OUT[[12]]  <- DF
   OUT[[13]]  <- DF.EST
   OUT[[14]]  <- deparse(CALL)
-  OUT[[15]]  <- to.environment
-  OUT[[16]]  <- value.name
+  OUT[[15]]  <- discrete
+  OUT[[16]]  <- to.environment
+  OUT[[17]]  <- envir
+  OUT[[18]]  <- value.name
   class(OUT) <- 'kde'
 
-  #Create computational components for KDE
-  GEN.K       <- paste('k <-', length(DATA))
-  GEN.DATA    <- paste('means <-', paste(deparse(DATA), collapse = ''))
-  if (!WEIGHTED) {
-    GEN.WEIGHTS <- NULL } else {
-      GEN.WEIGHTS <- paste('weights <-', paste(deparse(WEIGHTS), collapse = '')) }
+  #Generate probability functions for continuous KDE
+  if (!discrete) {
+    PROB.FUNCS <- generate.KDE.continuous(data = DATA, weights = WEIGHTS, weighted = WEIGHTED,
+                                          bandwidth = BAND, df = DF)
+    OUT[[1]] <- PROB.FUNCS[[1]]
+    OUT[[2]] <- PROB.FUNCS[[2]]
+    OUT[[3]] <- PROB.FUNCS[[3]]
+    OUT[[4]] <- PROB.FUNCS[[4]] }
 
-  #Create function-generator
-  generate_function <- function(..., commands, envir = parent.frame(),
-                                openbracket = FALSE, closebracket = FALSE) {
-    body <- paste(commands, collapse = '\n')
-    if (!openbracket)  { body <- paste(c('{', body), collapse = '\n') }
-    if (!closebracket) { body <- paste(c(body, '}'), collapse = '\n') }
-    as.function(c(..., str2lang(body)), envir = envir) }
-
-  #Generate density function
-  COMM <- c('',
-            '#Set data and weights',
-            GEN.K, GEN.DATA, GEN.WEIGHTS,
-            '',
-            '#Compute log-density values',
-            'n <- length(x)',
-            'LOGDENS <- rep(0, n)',
-            'LOGMATRIX <- matrix(0, nrow = n, ncol = k)',
-            if (!WEIGHTED) {
-              c('  for (i in 1:n) {',
-                '    LOGMATRIX[i,] <- dt((x[i]-means)/bandwidth, df = df, log = TRUE) - log(bandwidth) - log(k) ',
-                '    LOGDENS[i] <- matrixStats::logSumExp(LOGMATRIX[i,]) }') } else {
-                  c('  for (i in 1:n) {',
-                    '    LOGMATRIX[i,] <- dt((x[i]-means)/bandwidth, df = df, log = TRUE) - log(bandwidth) + log(weights) ',
-                    '    LOGDENS[i] <- matrixStats::logSumExp(LOGMATRIX[i,]) }') },
-            '',
-            '#Return output',
-            'if (log) { LOGDENS } else { exp(LOGDENS) }')
-  OUT[[1]] <- generate_function(x = NA, bandwidth = BAND, df = DF, log = FALSE, commands = COMM)
-
-  #Generate cumulative distribution function
-  COMM <- c('',
-            '#Set data and weights',
-            GEN.K, GEN.DATA, GEN.WEIGHTS,
-            '',
-            '#Compute log-CDF values',
-            'n <- length(x)',
-            'LOGCDF <- rep(0, n)',
-            'LOGMATRIX <- matrix(0, nrow = n, ncol = k)',
-            if (!WEIGHTED) {
-              c('  for (i in 1:n) {',
-                '    LOGMATRIX[i,] <- pt((x[i]-means)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) - log(k) ',
-                '    LOGCDF[i] <- matrixStats::logSumExp(LOGMATRIX[i,]) }') } else {
-                  c('  for (i in 1:n) {',
-                    '    LOGMATRIX[i,] <- pt((x[i]-means)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) + log(weights) ',
-                    '    LOGCDF[i] <- matrixStats::logSumExp(LOGMATRIX[i,]) }') },
-            '',
-            '#Return output',
-            'if (log.p) { LOGCDF } else { exp(LOGCDF) }')
-  OUT[[2]] <- generate_function(x = NA, bandwidth = BAND, df = DF, lower.tail = TRUE, log.p = FALSE, commands = COMM)
-
-  #Generate quantile function
-  COMM <- c('',
-            '#Set data and weights',
-            GEN.K, GEN.DATA, GEN.WEIGHTS,
-            '',
-            '#Get log-probabilities from inputs',
-            'n <- length(p)',
-            'if (log.p) { LOGP <- p } else { LOGP <- log(p) }',
-            'if (!lower.tail) { LOGP <- VGAM::log1mexp(-LOGP) }',
-            '',
-            '#Compute approximate quantiles',
-            'QUANTILES.APPROX <- quantile(x = means, probs = exp(LOGP), names = FALSE)',
-            '',
-            '#Refine approximate quantiles via optimisation',
-            'QUANTILES <- QUANTILES.APPROX',
-            '',
-            'for (i in 1:n) {',
-            '  ',
-            '  #Check for special cases',
-            '  if (LOGP[i] == -Inf) { QUANTILES[i] <- -Inf }',
-            '  if (LOGP[i] == 0)    { QUANTILES[i] <- Inf }',
-            '  ',
-            '  #Optimise for remaining cases',
-            '  if ((LOGP[i] != -Inf)&(LOGP[i] != 0)) {',
-            '    ',
-            '    #Set objective function',
-            if (!WEIGHTED) { c(
-              '    OBJECTIVE <- function(x) {',
-              '      LOGVALS <- pt((x-means)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) - log(k) ',
-              '      LOGCDF  <- matrixStats::logSumExp(LOGVALS) ',
-              '      (LOGCDF - LOGP[i])^2 }') } else { c(
-                '    OBJECTIVE <- function(x) {',
-                '      LOGVALS <- pt((x-means)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) + log(weights) ',
-                '      LOGCDF  <- matrixStats::logSumExp(LOGVALS) ',
-                '      (LOGCDF - LOGP[i])^2 }') },
-            '    ',
-            '    #Refine quantile',
-            '    NLM <- nlm(f = OBJECTIVE, p = QUANTILES.APPROX[i])',
-            '    QUANTILES[i] <- NLM$estimate } }',
-            '',
-            '#Return output',
-            'QUANTILES')
-  OUT[[3]] <- generate_function(p = NA, bandwidth = BAND, df = DF, lower.tail = TRUE, log.p = FALSE, commands = COMM)
-
-  #Generate random-generation function
-  COMM <- c('',
-            '#Set data and weights',
-            GEN.K, GEN.DATA, GEN.WEIGHTS,
-            '',
-            '#Generate random variables',
-            if (!WEIGHTED) {
-              'SAMPLE <- sample.int(k, size = n, replace = TRUE)' } else {
-                'SAMPLE <- sample.int(k, size = n, replace = TRUE, prob = weights)' },
-            'MMM <- means[SAMPLE]',
-            'TTT <- rt(n, df = df)',
-            'OUT <- MMM + bandwidth*TTT',
-            '',
-            '#Return output',
-            'OUT')
-  OUT[[4]] <- generate_function(n = NA, bandwidth = BAND, df = DF, commands = COMM)
+  #Generate probability functions for discrete KDE
+  if (discrete) {
+    PROB.FUNCS <- generate.KDE.discrete(data = DATA, weights = WEIGHTS, weighted = WEIGHTED,
+                                        bandwidth = BAND, df = DF)
+    OUT[[1]] <- PROB.FUNCS[[1]]
+    OUT[[2]] <- PROB.FUNCS[[2]]
+    OUT[[3]] <- PROB.FUNCS[[3]]
+    OUT[[4]] <- PROB.FUNCS[[4]] }
 
   #Load functions to global environment (if required)
   if (to.environment) {
@@ -284,14 +203,20 @@ KDE <- function (data, na.rm = FALSE, weights = NULL,
     #Check if functions already exist in the global environment
     #Message user if functions are overwritten
     EXISTS <- rep(FALSE, 4)
-    for (i in 1:4) { EXISTS[i] <- exists(PROB.NAMES[i], envir = .GlobalEnv) }
+    for (i in 1:4) { EXISTS[i] <- exists(PROB.NAMES[i], envir = envir) }
     if (any(EXISTS)) {
-      message('\n', '    Message from call: ', deparse(CALL), '\n',
-              '    The following objects were overwritten in the global environment:',
-              '\n \n', '    ', paste(PROB.NAMES[EXISTS], collapse = ', '), '\n') }
+      if (identical(envir, .GlobalEnv)) {
+        message('\n', '    Message from call: ', deparse(CALL), '\n',
+                '    The following objects were overwritten in the global environment: \n \n',
+                '    ', paste(PROB.NAMES[EXISTS], collapse = ', '), '\n')
+      } else {
+        message('\n', '    Message from call: ', deparse(CALL), '\n',
+                '    The following objects were overwritten in the environment \'',
+                deparse(substitute(envir)), '\' :', '\n \n',
+                '    ', paste(PROB.NAMES[EXISTS], collapse = ', '), '\n') } }
 
     #Load functions to the global environment
-    list2env(OUT[1:4], envir = .GlobalEnv) }
+    list2env(OUT[1:4], envir = envir) }
 
   #Return output
   OUT }
@@ -316,10 +241,15 @@ print.kde <- function(object, digits = 6) {
   weighted     <- object$weighted
   band.est     <- object$bandwidth.est
   df.est       <- object$df.est
+  discrete     <- object$discrete
   to.env       <- object$to.environment
+  envir        <- object$envir
 
-  #Print title and description
-  cat('\n  Kernel Density Estimator (KDE) \n \n')
+  #Print title
+  if (!discrete) { cat('\n  Kernel Density Estimator (KDE) \n \n') }
+  if (discrete)  { cat('\n  Discrete Kernel Density Estimator (KDE) \n \n') }
+
+  #Print description
   cat('  Computed from', k, 'data points in the input', paste0('\'', data.name, '\'', '\n'))
   if (weighted) { cat('  KDE uses weights from input', paste0('\'', weights.name, '\''), '\n') }
 
@@ -337,17 +267,22 @@ print.kde <- function(object, digits = 6) {
 
   #Print information on probability functions
   STAR <- rep(FALSE, 4)
-  if (exists(nn[1])) { if (identical(get(nn[1], envir = .GlobalEnv), object[[1]])) { STAR[1] <- TRUE } }
-  if (exists(nn[2])) { if (identical(get(nn[2], envir = .GlobalEnv), object[[2]])) { STAR[2] <- TRUE } }
-  if (exists(nn[3])) { if (identical(get(nn[3], envir = .GlobalEnv), object[[3]])) { STAR[3] <- TRUE } }
-  if (exists(nn[4])) { if (identical(get(nn[4], envir = .GlobalEnv), object[[4]])) { STAR[4] <- TRUE } }
-  cat('  Probability functions for the KDE are the following: \n \n')
+  if (exists(nn[1])) { if (identical(get(nn[1], envir = envir), object[[1]])) { STAR[1] <- TRUE } }
+  if (exists(nn[2])) { if (identical(get(nn[2], envir = envir), object[[2]])) { STAR[2] <- TRUE } }
+  if (exists(nn[3])) { if (identical(get(nn[3], envir = envir), object[[3]])) { STAR[3] <- TRUE } }
+  if (exists(nn[4])) { if (identical(get(nn[4], envir = envir), object[[4]])) { STAR[4] <- TRUE } }
+  if (!discrete) { cat('  Probability functions for the KDE are the following: \n \n') }
+  if (discrete)  { cat('  Probability functions for the discrete KDE are the following: \n \n') }
   cat('      Density function:                  ', nn[1], ifelse(STAR[1], '*', ''), '\n',
        '     Distribution function:             ', nn[2], ifelse(STAR[2], '*', ''), '\n',
        '     Quantile function:                 ', nn[3], ifelse(STAR[3], '*', ''), '\n',
        '     Random generation function:        ', nn[4], ifelse(STAR[4], '*', ''), '\n', '\n')
   if (any(STAR)) {
-    cat('  * This function is presently loaded in the global environment \n \n') } }
+    if (identical(envir, .GlobalEnv)) {
+      cat('  * This function is presently loaded in the global environment \n \n')
+    } else {
+    cat('  * This function is presently loaded in the environment \'',
+        deparse(substitute(envir)), '\' \n \n') } } }
 
 
 plot.kde <- function(object, digits = 6, n = 512, cut = 4,
@@ -380,14 +315,12 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 4,
   dens <- object[[1]]
   band.est   <- object$bandwidth.est
   df.est     <- object$df.est
+  discrete   <- object$discrete
   value.name <- object$value.name
 
-  #Compute plot values
+  #Compute value range for the plot
   xmin <- min(data) - bw*cut
   xmax <- max(data) + bw*cut
-  xx   <- xmin + (xmax-xmin)*((1:n)-1)/(n-1)
-  yy   <- dens(xx)
-  zz   <- rep(0, n)
 
   #Create the subtitle
   if (df.est)   { E1 <- 'Estimated degrees-of-freedom = ' } else { E1 <- 'Input degrees-of-freedom = ' }
@@ -395,12 +328,27 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 4,
   SUBTITLE <- paste0( '(', E1, if (df == Inf) { '\U221E' } else { formatC(df, digits = digits, format = 'f') },
                      ', ', E2, formatC(bw, digits = digits, format = 'f'), ')')
 
-  #Create the plot
-  plot(xx, yy, type = 'l',
-       xlab = value.name, ylab = 'Density')
-  title(main = 'Kernel Density Estimator')
-  mtext(side = 3, line = 0.25, cex = 0.8, SUBTITLE)
-  polygon(c(xx, rev(xx)), c(zz, rev(yy)), col = fill.color)
+  #Create the plot (continuous KDE)
+  if (!discrete) {
+    xx   <- xmin + (xmax-xmin)*((1:n)-1)/(n-1)
+    yy   <- dens(xx)
+    zz   <- rep(0, n)
+    plot(xx, yy, type = 'l',
+         xlab = value.name, ylab = 'Density')
+    title(main = 'Kernel Density Estimator')
+    mtext(side = 3, line = 0.25, cex = 0.8, SUBTITLE)
+    polygon(c(xx, rev(xx)), c(zz, rev(yy)), col = fill.color) }
+
+  #Create the plot (discrete KDE)
+  if (discrete) {
+    xx   <- (floor(xmin)):(ceiling(xmax))
+    yy   <- dens(xx)
+    zz   <- rep(0, n)
+    barplot(names.arg = xx, height = yy,
+            ylim = c(0, 1.1*max(yy)), col = fill.color,
+            xlab = value.name, ylab = 'Probability')
+    title(main = 'Discrete Kernel Density Estimator')
+    mtext(side = 3, line = 0.25, cex = 0.8, SUBTITLE) }
 
   #Save the plot
   PLOT <- recordPlot()
@@ -408,3 +356,267 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 4,
 
   #Return the plot
   PLOT }
+
+
+generate.KDE.continuous <- function (data, weights, weighted, bandwidth, df) {
+
+  #Set output list
+  OUT <- vector(length = 4, mode = 'list')
+
+  #Create computational components for KDE
+  GEN.K       <- paste('k <-', length(data))
+  GEN.DATA    <- paste('means <-', paste(deparse(data), collapse = ''))
+  if (!weighted) {
+    GEN.WEIGHTS <- NULL } else {
+      GEN.WEIGHTS <- paste('weights <-', paste(deparse(weights), collapse = '')) }
+
+  #Create function-generator
+  generate_function <- function(..., commands, envir = parent.frame(),
+                                openbracket = FALSE, closebracket = FALSE) {
+    body <- paste(commands, collapse = '\n')
+    if (!openbracket)  { body <- paste(c('{', body), collapse = '\n') }
+    if (!closebracket) { body <- paste(c(body, '}'), collapse = '\n') }
+    as.function(c(..., str2lang(body)), envir = envir) }
+
+  #Generate density function
+  COMM <- c('',
+            '#Set data and weights',
+            GEN.K, GEN.DATA, GEN.WEIGHTS,
+            '',
+            '#Compute log-density values',
+            'n <- length(x)',
+            'LOGDENS <- rep(0, n)',
+            'LOGMATRIX <- matrix(0, nrow = n, ncol = k)',
+            if (!weighted) {
+              c('  for (i in 1:n) {',
+                '    LOGMATRIX[i,] <- dt((x[i]-means)/bandwidth, df = df, log = TRUE) - log(bandwidth) - log(k) ',
+                '    LOGDENS[i] <- matrixStats::logSumExp(LOGMATRIX[i,]) }') } else {
+                  c('  for (i in 1:n) {',
+                    '    LOGMATRIX[i,] <- dt((x[i]-means)/bandwidth, df = df, log = TRUE) - log(bandwidth) + log(weights) ',
+                    '    LOGDENS[i] <- matrixStats::logSumExp(LOGMATRIX[i,]) }') },
+            '',
+            '#Return output',
+            'if (log) { LOGDENS } else { exp(LOGDENS) }')
+  OUT[[1]] <- generate_function(x = NA, bandwidth = bandwidth, df = df, log = FALSE, commands = COMM)
+
+  #Generate cumulative distribution function
+  COMM <- c('',
+            '#Set data and weights',
+            GEN.K, GEN.DATA, GEN.WEIGHTS,
+            '',
+            '#Compute log-CDF values',
+            'n <- length(x)',
+            'LOGCDF <- rep(0, n)',
+            'LOGMATRIX <- matrix(0, nrow = n, ncol = k)',
+            if (!weighted) {
+              c('  for (i in 1:n) {',
+                '    LOGMATRIX[i,] <- pt((x[i]-means)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) - log(k) ',
+                '    LOGCDF[i] <- matrixStats::logSumExp(LOGMATRIX[i,]) }') } else {
+                  c('  for (i in 1:n) {',
+                    '    LOGMATRIX[i,] <- pt((x[i]-means)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) + log(weights) ',
+                    '    LOGCDF[i] <- matrixStats::logSumExp(LOGMATRIX[i,]) }') },
+            '',
+            '#Return output',
+            'if (log.p) { LOGCDF } else { exp(LOGCDF) }')
+  OUT[[2]] <- generate_function(x = NA, bandwidth = bandwidth, df = df, lower.tail = TRUE, log.p = FALSE, commands = COMM)
+
+  #Generate quantile function
+  COMM <- c('',
+            '#Set data and weights',
+            GEN.K, GEN.DATA, GEN.WEIGHTS,
+            '',
+            '#Get log-probabilities from inputs',
+            'n <- length(p)',
+            'if (log.p) { LOGP <- p } else { LOGP <- log(p) }',
+            'if (!lower.tail) { LOGP <- VGAM::log1mexp(-LOGP) }',
+            '',
+            '#Compute approximate quantiles',
+            'QUANTILES.APPROX <- quantile(x = means, probs = exp(LOGP), names = FALSE)',
+            '',
+            '#Refine approximate quantiles via optimisation',
+            'QUANTILES <- QUANTILES.APPROX',
+            '',
+            'for (i in 1:n) {',
+            '  ',
+            '  #Check for special cases',
+            '  if (LOGP[i] == -Inf) { QUANTILES[i] <- -Inf }',
+            '  if (LOGP[i] == 0)    { QUANTILES[i] <- Inf }',
+            '  ',
+            '  #Optimise for remaining cases',
+            '  if ((LOGP[i] != -Inf)&(LOGP[i] != 0)) {',
+            '    ',
+            '    #Set objective function',
+            if (!weighted) { c(
+              '    OBJECTIVE <- function(x) {',
+              '      LOGVALS <- pt((x-means)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) - log(k) ',
+              '      LOGCDF  <- matrixStats::logSumExp(LOGVALS) ',
+              '      (LOGCDF - LOGP[i])^2 }') } else { c(
+                '    OBJECTIVE <- function(x) {',
+                '      LOGVALS <- pt((x-means)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) + log(weights) ',
+                '      LOGCDF  <- matrixStats::logSumExp(LOGVALS) ',
+                '      (LOGCDF - LOGP[i])^2 }') },
+            '    ',
+            '    #Refine quantile',
+            '    NLM <- nlm(f = OBJECTIVE, p = QUANTILES.APPROX[i])',
+            '    QUANTILES[i] <- NLM$estimate } }',
+            '',
+            '#Return output',
+            'QUANTILES')
+  OUT[[3]] <- generate_function(p = NA, bandwidth = bandwidth, df = df, lower.tail = TRUE, log.p = FALSE, commands = COMM)
+
+  #Generate random-generation function
+  COMM <- c('',
+            '#Set data and weights',
+            GEN.K, GEN.DATA, GEN.WEIGHTS,
+            '',
+            '#Generate random variables',
+            if (!weighted) {
+              'SAMPLE <- sample.int(k, size = n, replace = TRUE)' } else {
+                'SAMPLE <- sample.int(k, size = n, replace = TRUE, prob = weights)' },
+            'MMM <- means[SAMPLE]',
+            'TTT <- rt(n, df = df)',
+            'OUT <- MMM + bandwidth*TTT',
+            '',
+            '#Return output',
+            'OUT')
+  OUT[[4]] <- generate_function(n = NA, bandwidth = bandwidth, df = df, commands = COMM)
+
+  #Return output
+  OUT }
+
+
+generate.KDE.discrete <- function (data, weights, weighted, bandwidth, df) {
+
+  #Set output list
+  OUT <- vector(length = 4, mode = 'list')
+
+  #Create computational components for KDE
+  GEN.K       <- paste('k <-', length(data))
+  GEN.DATA    <- paste('means <-', paste(deparse(data), collapse = ''))
+  if (!weighted) {
+    GEN.WEIGHTS <- NULL } else {
+      GEN.WEIGHTS <- paste('weights <-', paste(deparse(weights), collapse = '')) }
+
+  #Create function-generator
+  generate_function <- function(..., commands, envir = parent.frame(),
+                                openbracket = FALSE, closebracket = FALSE) {
+    body <- paste(commands, collapse = '\n')
+    if (!openbracket)  { body <- paste(c('{', body), collapse = '\n') }
+    if (!closebracket) { body <- paste(c(body, '}'), collapse = '\n') }
+    as.function(c(..., str2lang(body)), envir = envir) }
+
+  #Generate density function
+  COMM <- c('',
+            '#Set data and weights',
+            GEN.K, GEN.DATA, GEN.WEIGHTS,
+            '',
+            '#Compute log-density values',
+            'n <- length(x)',
+            'III  <- complex(imaginary = 1)',
+            'LOGDENS <- rep(-Inf, n)',
+            'LOGMATRIX <- matrix(complex(1), nrow = n, ncol = k)',
+            if (!weighted) {
+              c('  for (i in 1:n) {',
+                '    if (x[i] == as.integer(x[i])) {',
+                '    LOGMATRIX[i,] <- pt((x[i]-means+0.5)/bandwidth, df = df, log = TRUE) - log(k) + ',
+                '                     III*(pt((x[i]-means-0.5)/bandwidth, df = df, log = TRUE) - log(k))',
+                '    L1 <- matrixStats::logSumExp(Re(LOGMATRIX[i,]))',
+                '    L2 <- matrixStats::logSumExp(Im(LOGMATRIX[i,]))',
+                '    LOGDENS[i] <- L1 + VGAM::log1mexp(L1-L2) } }') } else {
+                  c('  for (i in 1:n) {',
+                    '    if (x[i] == as.integer(x[i])) {',
+                    '    LOGMATRIX[i,] <- pt((x[i]-means+0.5)/bandwidth, df = df, log = TRUE) + log(weights) +',
+                    '                     III*(pt((x[i]-means-0.5)/bandwidth, df = df, log = TRUE) + log(weights))',
+                    '    L1 <- matrixStats::logSumExp(Re(LOGMATRIX[i,]))',
+                    '    L2 <- matrixStats::logSumExp(Im(LOGMATRIX[i,]))',
+                    '    LOGDENS[i] <- L1 + VGAM::log1mexp(L1-L2) } }') },
+            '',
+            '#Return output',
+            'if (log) { LOGDENS } else { exp(LOGDENS) }')
+  OUT[[1]] <- generate_function(x = NA, bandwidth = bandwidth, df = df, log = FALSE, commands = COMM)
+
+  #Generate cumulative distribution function
+  COMM <- c('',
+            '#Set data and weights',
+            GEN.K, GEN.DATA, GEN.WEIGHTS,
+            '',
+            '#Compute log-CDF values',
+            'n <- length(x)',
+            'LOGCDF <- rep(0, n)',
+            'LOGMATRIX <- matrix(0, nrow = n, ncol = k)',
+            if (!weighted) {
+              c('  for (i in 1:n) {',
+                '    LOGMATRIX[i,] <- pt((ceiling(x[i]-0.5)-means+0.5)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) - log(k) ',
+                '    LOGCDF[i] <- matrixStats::logSumExp(LOGMATRIX[i,]) }') } else {
+                  c('  for (i in 1:n) {',
+                    '    LOGMATRIX[i,] <- pt((ceiling(x[i]-0.5)-means+0.5)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) + log(weights) ',
+                    '    LOGCDF[i] <- matrixStats::logSumExp(LOGMATRIX[i,]) }') },
+            '',
+            '#Return output',
+            'if (log.p) { LOGCDF } else { exp(LOGCDF) }')
+  OUT[[2]] <- generate_function(x = NA, bandwidth = bandwidth, df = df, lower.tail = TRUE, log.p = FALSE, commands = COMM)
+
+  #Generate quantile function
+  COMM <- c('',
+            '#Set data and weights',
+            GEN.K, GEN.DATA, GEN.WEIGHTS,
+            '',
+            '#Get log-probabilities from inputs',
+            'n <- length(p)',
+            'if (log.p) { LOGP <- p } else { LOGP <- log(p) }',
+            'if (!lower.tail) { LOGP <- VGAM::log1mexp(-LOGP) }',
+            '',
+            '#Compute approximate quantiles',
+            'QUANTILES.APPROX <- quantile(x = means, probs = exp(LOGP), names = FALSE)',
+            '',
+            '#Refine approximate quantiles via optimisation',
+            'QUANTILES <- QUANTILES.APPROX',
+            '',
+            'for (i in 1:n) {',
+            '  ',
+            '  #Check for special cases',
+            '  if (LOGP[i] == -Inf) { QUANTILES[i] <- -Inf }',
+            '  if (LOGP[i] == 0)    { QUANTILES[i] <- Inf }',
+            '  ',
+            '  #Optimise for remaining cases',
+            '  if ((LOGP[i] != -Inf)&(LOGP[i] != 0)) {',
+            '    ',
+            '    #Set objective function',
+            if (!weighted) { c(
+              '    OBJECTIVE <- function(x) {',
+              '      LOGVALS <- pt((x-means)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) - log(k) ',
+              '      LOGCDF  <- matrixStats::logSumExp(LOGVALS) ',
+              '      (LOGCDF - LOGP[i])^2 }') } else { c(
+                '    OBJECTIVE <- function(x) {',
+                '      LOGVALS <- pt((x-means)/bandwidth, df = df, lower.tail = lower.tail, log.p = TRUE) + log(weights) ',
+                '      LOGCDF  <- matrixStats::logSumExp(LOGVALS) ',
+                '      (LOGCDF - LOGP[i])^2 }') },
+            '    ',
+            '    #Refine quantile',
+            '    NLM <- nlm(f = OBJECTIVE, p = QUANTILES.APPROX[i])',
+            '    QUANTILES[i] <- NLM$estimate } }',
+            'QUANTILES <- ceiling(QUANTILES - 0.5)',
+            '',
+            '#Return output',
+            'ceiling(QUANTILES)')
+  OUT[[3]] <- generate_function(p = NA, bandwidth = bandwidth, df = df, lower.tail = TRUE, log.p = FALSE, commands = COMM)
+
+  #Generate random-generation function
+  COMM <- c('',
+            '#Set data and weights',
+            GEN.K, GEN.DATA, GEN.WEIGHTS,
+            '',
+            '#Generate random variables',
+            if (!weighted) {
+              'SAMPLE <- sample.int(k, size = n, replace = TRUE)' } else {
+                'SAMPLE <- sample.int(k, size = n, replace = TRUE, prob = weights)' },
+            'MMM <- means[SAMPLE]',
+            'TTT <- rt(n, df = df)',
+            'OUT <- ceiling(MMM + bandwidth*TTT - 0.5)',
+            '',
+            '#Return output',
+            'OUT')
+  OUT[[4]] <- generate_function(n = NA, bandwidth = bandwidth, df = df, commands = COMM)
+
+  #Return output
+  OUT }
