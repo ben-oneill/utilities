@@ -11,23 +11,26 @@
 #'
 #' @examples
 #' datasets.str("datasets")
+
 datasets.str <- function(package = NULL) {
 
   if (missing(package)) { package <- .packages(all.available = TRUE) }
 
   #Create data frame listing available datasets
-  ENV           <- new.env()
-  DATASETS      <- as.data.frame(utils::data(package = package, envir = ENV)$results, stringsAsFactors = FALSE)[, c(1, 3, 4)]
-  DATASETS$dataset <- sub(".*[(]", "", sub("[)]$", "", DATASETS$Item))
-  DATASETS$Item <- sub(" .*", "", DATASETS$Item)
-  DATASETS      <- DATASETS[order(DATASETS$Package, tolower(DATASETS$Item)),]
+  ENV                <- new.env()
+  DATASETS           <- as.data.frame(utils::data(package = package, envir = ENV)$results, stringsAsFactors = FALSE)[, c(1, 3, 4)]
+  DATASETS$dataset   <- sub(".*[(]", "", sub("[)]$", "", DATASETS$Item))
+  DATASETS$Item      <- sub(" .*", "", DATASETS$Item)
+  DATASETS           <- DATASETS[order(DATASETS$Package, tolower(DATASETS$Item)),]
+  DATASETS$class     <- ''
 
   #Print structure
   for (i in 1:nrow(DATASETS)) {
-    DESC <- DATASETS[i, ]
+    DESC <- DATASETS[i, 1:4]
     data(list = DESC$dataset, package = DESC$Package, envir = ENV)
     DATA <- get(DESC$Item, envir = ENV)
+    DATASETS$class[i] <- paste0(class(DATA), collapse = ', ')
     message("\n", DESC$Package, "  |  ", DESC$Item, "  |  ", DESC$Title)
-    str(DATA, 1) }
+    str(DATA, max.level = 1) }
 
-  invisible(DATA)}
+  invisible(DATASETS) }
