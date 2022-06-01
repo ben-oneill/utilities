@@ -457,7 +457,13 @@ KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
 
     #Return output
     OUT }
-
+  
+  #Substitute blank input arguments for probability functions
+  formals(PROB.FUNCS[[1]])$x <- substitute()
+  formals(PROB.FUNCS[[2]])$x <- substitute()
+  formals(PROB.FUNCS[[3]])$p <- substitute()
+  formals(PROB.FUNCS[[4]])$n <- substitute()
+  
   #Return output
   PROB.FUNCS }
 
@@ -573,6 +579,12 @@ KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
     #Return output
     OUT }
 
+  #Substitute blank input arguments for probability functions
+  formals(PROB.FUNCS[[1]])$x <- substitute()
+  formals(PROB.FUNCS[[2]])$x <- substitute()
+  formals(PROB.FUNCS[[3]])$p <- substitute()
+  formals(PROB.FUNCS[[4]])$n <- substitute()
+  
   #Return output
   PROB.FUNCS }
 
@@ -620,6 +632,12 @@ KDE.continuous.hardcoded <- function(means, weights = NULL, bandwidth, df) {
   PROB.FUNCS.HARDCODED[[4]] <- generate_function(n = NA, bandwidth = bandwidth, df = df,
                                                  commands = COMMANDS)
 
+  #Substitute blank input arguments for probability functions
+  formals(PROB.FUNCS.HARDCODED[[1]])$x <- substitute()
+  formals(PROB.FUNCS.HARDCODED[[2]])$x <- substitute()
+  formals(PROB.FUNCS.HARDCODED[[3]])$p <- substitute()
+  formals(PROB.FUNCS.HARDCODED[[4]])$n <- substitute()
+  
   #Return output
   PROB.FUNCS.HARDCODED }
 
@@ -665,5 +683,11 @@ KDE.discrete.hardcoded <- function(means, weights = NULL, bandwidth, df) {
   PROB.FUNCS.HARDCODED[[4]] <- generate_function(n = NA, bandwidth = bandwidth, df = df,
                                                  commands = COMMANDS)
 
+  #Substitute blank input arguments for probability functions
+  formals(PROB.FUNCS.HARDCODED[[1]])$x <- substitute()
+  formals(PROB.FUNCS.HARDCODED[[2]])$x <- substitute()
+  formals(PROB.FUNCS.HARDCODED[[3]])$p <- substitute()
+  formals(PROB.FUNCS.HARDCODED[[4]])$n <- substitute()
+  
   #Return output
   PROB.FUNCS.HARDCODED }
