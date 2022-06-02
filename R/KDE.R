@@ -98,6 +98,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
 
   #Set the means and weights for KDE
   MEANS <- data
+  DATA  <- data
   k <- length(MEANS)
   if (is.null(weights)) { WEIGHTS <- NULL } else { WEIGHTS <- weights/sum(weights) }
 
@@ -594,7 +595,7 @@ plot.kde <- function(x, digits = 6, n = 512, cut = 4,
     GEN.WEIGHTS <- paste('weights <-', paste(deparse(weights), collapse = '')) }
 
   #Create probability functions
-  .PROB.FUNCS <- .KDE.continuous(means = means, weights = weights,
+  PROB.FUNCS <- .KDE.continuous(means = means, weights = weights,
                                bandwidth = bandwidth, df = df)
 
   #Create function-generator
