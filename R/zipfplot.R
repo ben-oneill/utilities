@@ -10,9 +10,6 @@
 #' and the output will be a single Zipf plot showing each of the variables.  The user can control
 #' whether the variables are shown on a single plot or separate plots.
 #'
-#' @usage \code{zipfplot(x, relative.freq = TRUE, smooth.line = TRUE, smooth.conf = TRUE,
-#'                       conf.level = 0.95, separate.plots = FALSE,
-#'                       data.name = FALSE, point.size = 3, point.alpha = 0.4)}
 #' @param x Data vector, matrix or data-frame
 #' @param relative.freq Logical; if \code{TRUE} the plot shows the relative frequency on vertical axis
 #' @param smooth.line Logical; if \code{TRUE} the plot shows a smoothed line through the data using LOESS method

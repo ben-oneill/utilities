@@ -21,7 +21,6 @@
 #' degrees-of-freedom is higher than this value then the algorithm will round the value to infinity
 #' (i.e., using the normal-distribution kernel instead of the T-distribution kernel).
 #'
-#' @usage \code{KDE}
 #' @param data Input data for the kernel density estimator (a numeric vector)
 #' @param weights Weights for the kernel density estimator (a numeric vector with the same length as the data)
 #' @param bandwidth Bandwidth for the KDE; if \code{NULL} it is estimated using LOO-MLE
@@ -50,13 +49,13 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
   if (!is.numeric(data))                  stop('Error: Input data should be numeric vector')
   if (length(data) == 0)                  stop('Error: Input data must not be empty')
   if (length(data) == 1)                  stop('Error: Input data must have at least two values to estimate the density')
-  if (!is.null(weights)) {
-    WEIGHTED <- TRUE
+
+  WEIGHTED <- !is.null(weights)
+  if (WEIGHTED) {
     if (!is.numeric(weights))             stop('Error: Input weights should be numeric')
     if (length(weights) != length(data))  stop('Error: Inputs data and weights should be the same length (unless the latter is NULL)')
     if (min(weights) < 0)                 stop('Error: Input weights cannot be negative')
-    if (sum(weights) == 0)                stop('Error: Input weights cannot all be zero') } else {
-    WEIGHTED <- FALSE }
+    if (max(weights) == 0)                stop('Error: Input weights cannot all be zero') }
 
   #Check bandwidth and df
   if (!is.null(bandwidth)) {
@@ -197,18 +196,18 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
 
     #Check if functions already exist in the global environment
     #Message user if functions are overwritten
-    EXISTS <- rep(FALSE, 4)
-    for (i in 1:4) { EXISTS[i] <- exists(PROB.NAMES[i], envir = envir) }
+    EXISTS <- vapply(PROB.NAMES[1:4], exists, FALSE, envir = envir)
     if (any(EXISTS)) {
-      if (identical(envir, .GlobalEnv)) {
-        message('\n', '    Message from call: ', deparse(CALL), '\n',
-                '    The following objects were overwritten in the global environment: \n \n',
-                '    ', paste(PROB.NAMES[EXISTS], collapse = ', '), '\n')
+      if(identical(envir, .GlobalEnv)){
+        loc <- "global environment"
       } else {
-        message('\n', '    Message from call: ', deparse(CALL), '\n',
-                '    The following objects were overwritten in the environment \'',
-                deparse(substitute(envir)), '\' :', '\n \n',
-                '    ', paste(PROB.NAMES[EXISTS], collapse = ', '), '\n') } }
+        loc <- sprintf("environment '%s'", deparse(substitute(envir)))
+      }
+      message('\n',
+              '    Message from call: ', deparse(CALL), '\n',
+              '    The following objects were overwritten in the ', loc, ': \n\n',
+              '    ', paste(PROB.NAMES[EXISTS], collapse = ', '), '\n')
+    }
 
     #Load functions to the global environment
     list2env(OUT[1:4], envir = envir) }
@@ -457,13 +456,13 @@ KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
 
     #Return output
     OUT }
-  
+
   #Substitute blank input arguments for probability functions
   formals(PROB.FUNCS[[1]])$x <- substitute()
   formals(PROB.FUNCS[[2]])$x <- substitute()
   formals(PROB.FUNCS[[3]])$p <- substitute()
   formals(PROB.FUNCS[[4]])$n <- substitute()
-  
+
   #Return output
   PROB.FUNCS }
 
@@ -584,7 +583,7 @@ KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
   formals(PROB.FUNCS[[2]])$x <- substitute()
   formals(PROB.FUNCS[[3]])$p <- substitute()
   formals(PROB.FUNCS[[4]])$n <- substitute()
-  
+
   #Return output
   PROB.FUNCS }
 
@@ -637,7 +636,7 @@ KDE.continuous.hardcoded <- function(means, weights = NULL, bandwidth, df) {
   formals(PROB.FUNCS.HARDCODED[[2]])$x <- substitute()
   formals(PROB.FUNCS.HARDCODED[[3]])$p <- substitute()
   formals(PROB.FUNCS.HARDCODED[[4]])$n <- substitute()
-  
+
   #Return output
   PROB.FUNCS.HARDCODED }
 
@@ -688,6 +687,6 @@ KDE.discrete.hardcoded <- function(means, weights = NULL, bandwidth, df) {
   formals(PROB.FUNCS.HARDCODED[[2]])$x <- substitute()
   formals(PROB.FUNCS.HARDCODED[[3]])$p <- substitute()
   formals(PROB.FUNCS.HARDCODED[[4]])$n <- substitute()
-  
+
   #Return output
   PROB.FUNCS.HARDCODED }

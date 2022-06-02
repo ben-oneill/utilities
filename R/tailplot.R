@@ -25,13 +25,13 @@
 #' De Sousa, B. and Michailidis, G. (2004) A Diagnostic Plot for Estimating the Tail Index of a
 #' Distribution.  Journal of Computational and Graphical Statistics 13(4), pp. 1-22.
 #'
-#' @usage \code{tailplot(x, tail.prop = 0.05, left = TRUE, right = TRUE,
+#' @usage tailplot(x, tail.prop = 0.05, left = TRUE, right = TRUE,
 #'        show.lines = TRUE, lines = 16, line.order = 3,
 #'        tail.plot = TRUE, hill.plot = FALSE, dsm.plot = FALSE,
 #'        point.size = 3, point.alpha = 0.4,
 #'        point.color = NULL, point.colour = point.color,
 #'        line.color  = NULL, line.colour  = line.color,
-#'        ytop.mult.left = 3, ytop.mult.right = 3)}
+#'        ytop.mult.left = 3, ytop.mult.right = 3)
 #' @param x Data vector (numeric)
 #' @param tail.prop The proportion of values to use in each tail
 #' @param left Logical; if \code{TRUE} the tail plot includes a plot for the left tail
@@ -44,8 +44,8 @@
 #' @param dsm.plot Logical; if \code{TRUE} the output includes the DSM plot
 #' @param point.size Size of the points in the plots
 #' @param point.alpha Alpha-transparency of the points in the plots
-#' @param point.color/point.colour Colour of the points in the plots (default is blue)
-#' @param line.colour/line.colour Colour of the lines in the plots (default is darkred)
+#' @param point.color,point.colour Colour of the points in the plots (default is blue)
+#' @param line.color,line.colour Colour of the lines in the plots (default is darkred)
 #' @param ytop.mult.left Multiplier used to determine the height of axis for left Hill/DSM plots
 #' @param ytop.mult.right Multiplier used to determine the height of axis for right Hill/DSM plots
 #' @return Tail plots for the input data (and Hill plots or DSM plots if requested)
