@@ -58,18 +58,18 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
     if (max(weights) == 0)                stop('Error: Input weights cannot all be zero') }
 
   #Check bandwidth and df
-  if (!is.null(bandwidth)) {
-    BAND.EST <- FALSE
+  BAND.EST <- is.null(bandwidth)
+  if (!BAND.EST) {
     if (!is.numeric(bandwidth))           stop('Error: Input bandwidth should be a numeric value')
     if (length(bandwidth) != 1)           stop('Error: Input bandwidth should be a single numeric value')
-    if (min(bandwidth) <= 0)              stop('Error: Input bandwidth should be a positive value') } else {
-    BAND.EST <- TRUE }
-  if (!is.null(df)) {
-    DF.EST <- FALSE
+    if (min(bandwidth) <= 0)              stop('Error: Input bandwidth should be a positive value') }
+
+  DF.EST <- is.null(df)
+  if (!DF.EST) {
     if (!is.numeric(df))                  stop('Error: Input df should be a numeric value')
     if (length(df) != 1)                  stop('Error: Input df should be a single numeric value')
-    if (min(df) <= 0)                     stop('Error: Input df should be a positive value') } else {
-    DF.EST <- TRUE }
+    if (min(df) <= 0)                     stop('Error: Input df should be a positive value') }
+
   if (!is.numeric(df.norm))               stop('Error: Input df.norm should be numeric value')
   if (length(df.norm) != 1)               stop('Error: Input df.norm should be a single numeric value')
   if (min(df.norm) < 0)                   stop('Error: Input df.norm cannot be negative')
@@ -177,19 +177,13 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
 
   #Generate probability functions for continuous KDE
   if (!discrete) {
-    PROB.FUNCS <- KDE.continuous.hardcoded(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
-    OUT[[1]] <- PROB.FUNCS[[1]]
-    OUT[[2]] <- PROB.FUNCS[[2]]
-    OUT[[3]] <- PROB.FUNCS[[3]]
-    OUT[[4]] <- PROB.FUNCS[[4]] }
+    OUT[1:4] <- .KDE.continuous.hardcoded(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
+  }
 
   #Generate probability functions for continuous KDE
   if (discrete) {
-    PROB.FUNCS <- KDE.discrete.hardcoded(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
-    OUT[[1]] <- PROB.FUNCS[[1]]
-    OUT[[2]] <- PROB.FUNCS[[2]]
-    OUT[[3]] <- PROB.FUNCS[[3]]
-    OUT[[4]] <- PROB.FUNCS[[4]] }
+    OUT[1:4] <- .KDE.discrete.hardcoded(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
+  }
 
   #Load functions to global environment (if required)
   if (to.environment) {
@@ -219,7 +213,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
 print.kde <- function(object, digits = 6) {
 
   #Check object class
-  if (!('kde' %in% class(object)))    stop('Error: This print method is only used for objects of class \'kde\'')
+  if (!inherits(object, 'kde'))       stop('Error: This print method is only used for objects of class \'kde\'')
   if (!is.numeric(digits))            stop('Error: Input digits should be a numeric value')
   if (length(digits) != 1)            stop('Error: Input digits should be a single numeric value')
   if (as.integer(digits) != digits)   stop('Error: Input digits should be an integer')
@@ -352,7 +346,7 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 4,
   PLOT }
 
 
-KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
+.KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
 
   #Set output list
   PROB.FUNCS <- vector(length = 4, mode = 'list')
@@ -467,7 +461,7 @@ KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
   PROB.FUNCS }
 
 
-KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
+.KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
 
   #Set output list
   PROB.FUNCS <- vector(length = 4, mode = 'list')
@@ -588,7 +582,7 @@ KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
   PROB.FUNCS }
 
 
-KDE.continuous.hardcoded <- function(means, weights = NULL, bandwidth, df) {
+.KDE.continuous.hardcoded <- function(means, weights = NULL, bandwidth, df) {
 
   #Set output list
   PROB.FUNCS.HARDCODED <- vector(length = 4, mode = 'list')
@@ -600,7 +594,7 @@ KDE.continuous.hardcoded <- function(means, weights = NULL, bandwidth, df) {
     GEN.WEIGHTS <- paste('weights <-', paste(deparse(weights), collapse = '')) }
 
   #Create probability functions
-  PROB.FUNCS <- KDE.continuous(means = means, weights = weights,
+  .PROB.FUNCS <- .KDE.continuous(means = means, weights = weights,
                                bandwidth = bandwidth, df = df)
 
   #Create function-generator
@@ -641,7 +635,7 @@ KDE.continuous.hardcoded <- function(means, weights = NULL, bandwidth, df) {
   PROB.FUNCS.HARDCODED }
 
 
-KDE.discrete.hardcoded <- function(means, weights = NULL, bandwidth, df) {
+.KDE.discrete.hardcoded <- function(means, weights = NULL, bandwidth, df) {
 
   #Set output list
   PROB.FUNCS.HARDCODED <- vector(length = 4, mode = 'list')
@@ -651,7 +645,7 @@ KDE.discrete.hardcoded <- function(means, weights = NULL, bandwidth, df) {
   if (is.null(weights)) {
     GEN.WEIGHTS <- 'weights <- NULL' } else {
       GEN.WEIGHTS <- paste('weights <-', paste(deparse(weights), collapse = '')) }
-  PROB.FUNCS <- KDE.discrete(means = means, weights = weights,
+  PROB.FUNCS <- .KDE.discrete(means = means, weights = weights,
                              bandwidth = bandwidth, df = df)
 
     #Create function-generator
