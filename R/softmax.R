@@ -10,33 +10,18 @@
 #' and statistical applications.  The present functions define the softmax function and its inverse, both with a tuning
 #' parameter.  It also defines the log-softmax function and its inverse, both with a tuning parameter.
 #'
-#' @usage \code{softmax}
 #' @param eta A numeric vector input
 #' @param lambda Tuning parameter (a single positive value)
-#' @param gradient Logical; if \code{TRUE} the output will include a \code{'gradient'} attribute
-#' @param hessian Logical; if \code{TRUE} the output will include a \code{'hessian'} attribute
-#' @return Value of the softmax function
+#' @param gradient Logical
+#' @param hessian Logical
+#' @return Value of the softmax function or its inverse (or their log).
+#' If \code{gradient} or \code{hessian} is \code{TRUE}, it will be included as an attribute.
 #'
-#' @usage \code{softmaxinv}
 #' @param p A probability vector (i.e., numeric vector of non-negative values that sum to one)
-#' @param lambda Tuning parameter (a single positive value)
-#' @param gradient Logical; if \code{TRUE} the output will include a \code{'gradient'} attribute
-#' @param hessian Logical; if \code{TRUE} the output will include a \code{'hessian'} attribute
-#' @return Value of the inverse-softmax function
 #'
-#' @usage \code{logsoftmax}
 #' @param eta A numeric vector input
-#' @param lambda Tuning parameter (a single positive value)
-#' @param gradient Logical; if \code{TRUE} the output will include a \code{'gradient'} attribute
-#' @param hessian Logical; if \code{TRUE} the output will include a \code{'hessian'} attribute
-#' @return Value of the logsoftmax function
 #'
-#' @usage \code{logsoftmaxinv}
 #' @param l A log-probability vector (i.e., numeric vector of non-positive values that logsum to zero)
-#' @param lambda Tuning parameter (a single positive value)
-#' @param gradient Logical; if \code{TRUE} the output will include a \code{'gradient'} attribute
-#' @param hessian Logical; if \code{TRUE} the output will include a \code{'hessian'} attribute
-#' @return Value of the inverse-logsoftmax function
 #'
 #' @examples
 #' softmax(5:7)
@@ -77,7 +62,7 @@ softmax <- function(eta, lambda = 1, gradient = FALSE, hessian = FALSE) {
   #Return the output
   SOFT }
 
-
+#' @rdname softmax
 softmaxinv <- function(p, lambda = 1, gradient = FALSE, hessian = FALSE) {
 
   #Compute the inverse-softmax function
@@ -109,9 +94,9 @@ softmaxinv <- function(p, lambda = 1, gradient = FALSE, hessian = FALSE) {
   #Return the output
   SOFTINV }
 
-
+#' @rdname softmax
 logsoftmax <- function(eta, lambda = 1, gradient = FALSE, hessian = FALSE) {
-  
+
   stopifnot(requireNamespace("matrixStats", quietly = TRUE))
 
   #Compute the logsoftmax function
@@ -140,7 +125,7 @@ logsoftmax <- function(eta, lambda = 1, gradient = FALSE, hessian = FALSE) {
   #Return the output
   LSOFT }
 
-
+#' @rdname softmax
 logsoftmaxinv <- function(l, lambda = 1, gradient = FALSE, hessian = FALSE) {
 
   #Compute the inverse-softmax function

@@ -1,14 +1,11 @@
 #' Print a Data-Frame (allowing column/row separators)
 #'
-#' \code{print.data.frame} prints a data-frame (allowing column/row separators)
-#'
 #' Custom print method for objects of type \code{data.frame}.  This function prints the data-frame in the same way
-#' as the function in the base package, except that it allows the user to add textual column/row separators in the
+#' as the default \link[base]{print.data.frame} in the base package, except that it allows the user to add textual column/row separators in the
 #' print output in specified positions.  To do this the user adds row/column values for the inputs \code{row.separator}
 #' and \code{col.separator} indicating that separators should be added after those rows/columns.  The user can also
 #' set \code{sep.extend} to \code{TRUE} to extend the separators into the row/column-names.
 #'
-#' @usage \code{print.data.frame}
 #' @param x A data-frame (object of class \code{data.frame})
 #' @param ... optional arguments to \code{print} or \code{plot} methods
 #' @param row.separator A vector of values of rows (adds separators after those rows)
