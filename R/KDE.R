@@ -347,6 +347,35 @@ plot.kde <- function(x, digits = 6, n = 512, cut = 4,
   PLOT }
 
 
+.gen_F_capture_means_weights <- function(f, means, weights, ...) {
+  environment(f) <- list2env(list(means=means, weights=weights), parent = environment(f))
+  dots <- list(...)
+  for(i in names(dots)) {
+    formals(f)[[i]] <- dots[[i]]
+  }
+  formals(f)[c('means', 'weights')] <- NULL
+  f
+}
+
+
+.gen_F_splice_means_weights <- function(f, means, weights, ...) {
+
+  b <- body(f)
+  b[2 + seq_along(b)] <- b
+  b[[2]] <- bquote(means <- .(means))
+  b[[3]] <- bquote(weights <- .(weights))
+
+  body(f) <- b
+
+  dots <- list(...)
+  for(i in names(dots)) {
+    formals(f)[[i]] <- dots[[i]]
+  }
+  formals(f)[c('means', 'weights')] <- NULL
+  f
+}
+
+
 .KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
 
   #Set output list
@@ -611,6 +640,12 @@ plot.kde <- function(x, digits = 6, n = 512, cut = 4,
   PROB.FUNCS.HARDCODED[[1]] <- generate_function(x = NA, bandwidth = bandwidth, df = df,
                                                  log = FALSE, commands = COMMANDS)
 
+  P1.alt <- .gen_F_capture_means_weights(PROB.FUNCS[[1]], means, weights, bandwidth = bandwidth, df = df,
+                                                                     log = FALSE)
+
+  P1.splice <- .gen_F_splice_means_weights(PROB.FUNCS[[1]], means, weights, bandwidth = bandwidth, df = df,
+                                           log = FALSE)
+
   #Generate cumulative distribution function
   COMMANDS <- c(GEN.MEANS, GEN.WEIGHTS, as.character(body(PROB.FUNCS[[2]])[-1]))
   PROB.FUNCS.HARDCODED[[2]] <- generate_function(x = NA, bandwidth = bandwidth, df = df,
@@ -631,6 +666,9 @@ plot.kde <- function(x, digits = 6, n = 512, cut = 4,
   formals(PROB.FUNCS.HARDCODED[[2]])$x <- substitute()
   formals(PROB.FUNCS.HARDCODED[[3]])$p <- substitute()
   formals(PROB.FUNCS.HARDCODED[[4]])$n <- substitute()
+
+  attr(PROB.FUNCS.HARDCODED[[1]], "capture") <- P1.alt
+  attr(PROB.FUNCS.HARDCODED[[1]], "splice") <- P1.splice
 
   #Return output
   PROB.FUNCS.HARDCODED }
