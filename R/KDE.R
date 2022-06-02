@@ -210,28 +210,28 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
   OUT }
 
 
-print.kde <- function(object, digits = 6) {
+print.kde <- function(x, digits = 6, ...) {
 
   #Check object class
-  if (!inherits(object, 'kde'))       stop('Error: This print method is only used for objects of class \'kde\'')
+  if (!inherits(x, 'kde'))            stop('Error: This print method is only used for objects of class \'kde\'')
   if (!is.numeric(digits))            stop('Error: Input digits should be a numeric value')
   if (length(digits) != 1)            stop('Error: Input digits should be a single numeric value')
   if (as.integer(digits) != digits)   stop('Error: Input digits should be an integer')
   if (min(digits) <= 1)               stop('Error: Input digits must be positive')
 
   #Extract information
-  k  <- length(object$data)
-  bw <- object$bandwidth
-  df <- object$df
-  nn <- names(object)[1:4]
-  data.name    <- object$data.name
-  weights.name <- object$weights.name
-  weighted     <- object$weighted
-  band.est     <- object$bandwidth.est
-  df.est       <- object$df.est
-  discrete     <- object$discrete
-  to.env       <- object$to.environment
-  envir        <- object$envir
+  k  <- length(x$data)
+  bw <- x$bandwidth
+  df <- x$df
+  nn <- names(x)[1:4]
+  data.name    <- x$data.name
+  weights.name <- x$weights.name
+  weighted     <- x$weighted
+  band.est     <- x$bandwidth.est
+  df.est       <- x$df.est
+  discrete     <- x$discrete
+  to.env       <- x$to.environment
+  envir        <- x$envir
 
   #Print title
   if (!discrete) { cat('\n  Kernel Density Estimator (KDE) \n \n') }
@@ -255,10 +255,10 @@ print.kde <- function(object, digits = 6) {
 
   #Print information on probability functions
   STAR <- rep(FALSE, 4)
-  if (exists(nn[1])) { if (identical(get(nn[1], envir = envir), object[[1]])) { STAR[1] <- TRUE } }
-  if (exists(nn[2])) { if (identical(get(nn[2], envir = envir), object[[2]])) { STAR[2] <- TRUE } }
-  if (exists(nn[3])) { if (identical(get(nn[3], envir = envir), object[[3]])) { STAR[3] <- TRUE } }
-  if (exists(nn[4])) { if (identical(get(nn[4], envir = envir), object[[4]])) { STAR[4] <- TRUE } }
+  if (exists(nn[1])) { if (identical(get(nn[1], envir = envir), x[[1]])) { STAR[1] <- TRUE } }
+  if (exists(nn[2])) { if (identical(get(nn[2], envir = envir), x[[2]])) { STAR[2] <- TRUE } }
+  if (exists(nn[3])) { if (identical(get(nn[3], envir = envir), x[[3]])) { STAR[3] <- TRUE } }
+  if (exists(nn[4])) { if (identical(get(nn[4], envir = envir), x[[4]])) { STAR[4] <- TRUE } }
   if (!discrete) { cat('  Probability functions for the KDE are the following: \n \n') }
   if (discrete)  { cat('  Probability functions for the discrete KDE are the following: \n \n') }
   cat('      Density function:                  ', nn[1], ifelse(STAR[1], '*', ''), '\n',
@@ -273,11 +273,11 @@ print.kde <- function(object, digits = 6) {
         deparse(substitute(envir)), '\' \n \n') } } }
 
 
-plot.kde <- function(object, digits = 6, n = 512, cut = 4,
-                     fill.colour = 'dodgerblue', fill.color = fill.colour) {
+plot.kde <- function(x, digits = 6, n = 512, cut = 4,
+                     fill.colour = 'dodgerblue', fill.color = fill.colour, ...) {
 
   #Check object class
-  if (!('kde' %in% class(object)))    stop('Error: This plot method is only used for objects of class \'kde\'')
+  if (!('kde' %in% class(x)))    stop('Error: This plot method is only used for objects of class \'kde\'')
 
   #Check inputs
   if (!is.numeric(digits))            stop('Error: Input digits should be a numeric value')
@@ -297,14 +297,14 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 4,
   if (!fill.color %in% colours())     stop('Error: Input fill.colour/color must be in \'colours()\'')
 
   #Extract information
-  df   <- object$df
-  bw   <- object$bandwidth
-  data <- object$data
-  dens <- object[[1]]
-  band.est   <- object$bandwidth.est
-  df.est     <- object$df.est
-  discrete   <- object$discrete
-  value.name <- object$value.name
+  df   <- x$df
+  bw   <- x$bandwidth
+  data <- x$data
+  dens <- x[[1]]
+  band.est   <- x$bandwidth.est
+  df.est     <- x$df.est
+  discrete   <- x$discrete
+  value.name <- x$value.name
 
   #Compute value range for the plot
   xmin <- min(data) - bw*cut
