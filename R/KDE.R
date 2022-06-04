@@ -98,8 +98,8 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
   ############################################################################################################
 
   #Set the means and weights for KDE
-  MEANS <- data
-  k <- length(MEANS)
+  DATA <- data
+  k <- length(DATA)
   if (is.null(weights)) { WEIGHTS <- NULL } else { WEIGHTS <- weights/sum(weights) }
 
   #Estimate the parameters via LOO-MLE (if not given)
@@ -112,7 +112,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
         DDD <- dt((DATA[-i]-DATA[i])*exp(-p), df = df, log = TRUE) - p + log(WEIGHTS[-i])
         VEC[i] <- matrixStats::logSumExp(DDD) }
       -sum(VEC) }
-    NLM  <- nlm(f = NEGLOGLIKE, p = 0)
+    NLM  <- nlm(f = NEGLOGLIKE, p = 0.5*log(var(DATA)))
     BAND <- exp(NLM$estimate)
     DF   <- df }
 
@@ -125,7 +125,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
         DDD <- dt((DATA[-i]-DATA[i])/bandwidth, df = exp(p), log = TRUE) + log(WEIGHTS[-i])
         VEC[i] <- matrixStats::logSumExp(DDD) }
       -sum(VEC) }
-    NLM  <- nlm(f = NEGLOGLIKE, p = 0)
+    NLM  <- nlm(f = NEGLOGLIKE, p = log(1000))
     BAND <- bandwidth
     DF   <- exp(NLM$estimate)
     if (DF > df.norm) { DF <- Inf } }
@@ -139,7 +139,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
         DDD <- dt((DATA[-i]-DATA[i])*exp(-p[1]), df = exp(p[2]), log = TRUE) - p[1] + log(WEIGHTS[-i])
         VEC[i] <- matrixStats::logSumExp(DDD) }
       -sum(VEC) }
-    NLM  <- nlm(f = NEGLOGLIKE, p = c(0,0))
+    NLM  <- nlm(f = NEGLOGLIKE, p = c(0.5*log(var(DATA)), log(1000)))
     BAND <- exp(NLM$estimate[1])
     DF   <- exp(NLM$estimate[2])
     if (DF > df.norm) { DF <- Inf } }
@@ -155,11 +155,11 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
   ############################################################################################################
 
   #Create output list
-  OUT <- vector(mode = 'list', length = 18)
+  OUT <- vector(mode = 'list', length = 17)
   names(OUT)[1:4]  <- PROB.NAMES <- paste0(c('d', 'p', 'q', 'r'), density.name)
-  names(OUT)[5:18] <- c('data.name', 'data', 'weighted', 'weights.name', 'weights',
+  names(OUT)[5:17] <- c('data.name', 'data', 'weighted', 'weights.name', 'weights',
                         'bandwidth', 'bandwidth.est', 'df', 'df.est', 'call', 'discrete',
-                        'to.environment', 'envir', 'value.name')
+                        'value.name', 'envir')
   OUT[[5]]   <- DATA.NAME
   OUT[[6]]   <- DATA
   OUT[[7]]   <- WEIGHTED
@@ -171,14 +171,13 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
   OUT[[13]]  <- DF.EST
   OUT[[14]]  <- deparse(CALL)
   OUT[[15]]  <- discrete
-  OUT[[16]]  <- to.environment
+  OUT[[16]]  <- value.name
   OUT[[17]]  <- envir
-  OUT[[18]]  <- value.name
   class(OUT) <- 'kde'
 
   #Generate probability functions for continuous KDE
   if (!discrete) {
-    PROB.FUNCS <- KDE.continuous.hardcoded(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
+    PROB.FUNCS <- KDE.continuous(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
     OUT[[1]] <- PROB.FUNCS[[1]]
     OUT[[2]] <- PROB.FUNCS[[2]]
     OUT[[3]] <- PROB.FUNCS[[3]]
@@ -186,7 +185,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
 
   #Generate probability functions for continuous KDE
   if (discrete) {
-    PROB.FUNCS <- KDE.discrete.hardcoded(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
+    PROB.FUNCS <- KDE.discrete(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
     OUT[[1]] <- PROB.FUNCS[[1]]
     OUT[[2]] <- PROB.FUNCS[[2]]
     OUT[[3]] <- PROB.FUNCS[[3]]
@@ -195,7 +194,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
   #Load functions to global environment (if required)
   if (to.environment) {
 
-    #Check if functions already exist in the global environment
+    #Check if functions already exist in the loading environment
     #Message user if functions are overwritten
     EXISTS <- rep(FALSE, 4)
     for (i in 1:4) { EXISTS[i] <- exists(PROB.NAMES[i], envir = envir) }
@@ -215,6 +214,59 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
 
   #Return output
   OUT }
+
+
+KDE.load <- function (object, envir = NULL, overwrite = TRUE) {
+
+  #Check object class
+  if (!('kde' %in% class(object)))    stop('Error: This print method is only used for objects of class \'kde\'')
+
+  #Check inputs envir and overwrite
+  if (!is.null(envir)) {
+    if (!is.environment(envir))             stop('Error: Input envir should be an environment') }
+  if (!is.logical(overwrite))               stop('Error: Input overwrite should be a logical value')
+  if (length(overwrite) != 1)               stop('Error: Input overwrite should be a single logical value')
+
+  #Get information
+  CALL       <- sys.call()
+  PROB.FUNCS <- object[1:4]
+  PROB.NAMES <- names(PROB.FUNCS)
+  if (is.null(envir)) { envir <- object$envir }
+
+  #Check if functions already exist in the loading environment
+
+  EXISTS <- rep(FALSE, 4)
+  for (i in 1:4) { EXISTS[i] <- exists(PROB.NAMES[i], envir = envir) }
+
+  #Set functions to load to the loading environment
+  if (overwrite) { LOAD <- PROB.FUNCS } else { LOAD <- PROB.FUNCS[!EXISTS] }
+
+  #Message user if functions are/were already in the loading environment
+  if (overwrite) {
+    if (any(EXISTS)) {
+      if (identical(envir, .GlobalEnv)) {
+        message('\n', '    Message from call: ', deparse(CALL), '\n',
+                '    The following objects were overwritten in the global environment: \n \n',
+                '    ', paste(PROB.NAMES[EXISTS], collapse = ', '), '\n')
+      } else {
+        message('\n', '    Message from call: ', deparse(CALL), '\n',
+                '    The following objects were overwritten in the environment \'',
+                deparse(substitute(envir)), '\' :', '\n \n',
+                '    ', paste(PROB.NAMES[EXISTS], collapse = ', '), '\n') } } }
+  if (!overwrite) {
+    if (any(EXISTS)) {
+      if (identical(envir, .GlobalEnv)) {
+        message('\n', '    Message from call: ', deparse(CALL), '\n',
+                '    The following objects are already in the global environment (and were not overwritten): \n \n',
+                '    ', paste(PROB.NAMES[EXISTS], collapse = ', '), '\n')
+      } else {
+        message('\n', '    Message from call: ', deparse(CALL), '\n',
+                '    The following objects are already in the environment \'',
+                deparse(substitute(envir)), '\' (and were not overwritten):', '\n \n',
+                '    ', paste(PROB.NAMES[EXISTS], collapse = ', '), '\n') } } }
+
+  #Load functions to the loading environment (if appropriate)
+  invisible(list2env(LOAD, envir = envir)) }
 
 
 print.kde <- function(object, digits = 6) {
@@ -360,9 +412,7 @@ KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
   names(PROB.FUNCS) <- c('dkde', 'pkde', 'qkde', 'rkde')
 
   #Generate density function
-  PROB.FUNCS[[1]] <- function(x, means = means, weights = weights,
-                              bandwidth = bandwidth, df = df,
-                              log = FALSE) {
+  PROB.FUNCS[[1]] <- function(x, bandwidth, df, log = FALSE) {
 
     #Set mean-length and weights
     k <- length(means)
@@ -381,9 +431,7 @@ KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
     if (log) { LOGDENS } else { exp(LOGDENS) } }
 
   #Generate cumulative distribution function
-  PROB.FUNCS[[2]] <- function(x, means = means, weights = weights,
-                              bandwidth = bandwidth, df = df,
-                              lower.tail = TRUE, log.p = FALSE) {
+  PROB.FUNCS[[2]] <- function(x, bandwidth, df, lower.tail = TRUE, log.p = FALSE) {
 
     #Set mean-length and weights
     k <- length(means)
@@ -402,9 +450,7 @@ KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
     if (log.p) { LOGCDF } else { exp(LOGCDF) } }
 
   #Generate quantile function
-  PROB.FUNCS[[3]] <- function(p, means = means, weights = weights,
-                              bandwidth = bandwidth, df = df,
-                              lower.tail = TRUE, log.p = FALSE) {
+  PROB.FUNCS[[3]] <- function(p, bandwidth, df, lower.tail = TRUE, log.p = FALSE) {
 
     #Set mean-length and weights
     k <- length(means)
@@ -441,8 +487,7 @@ KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
     QUANTILES }
 
   #Generate random-generation function
-  PROB.FUNCS[[4]] <- function(n, means = means, weights = weights,
-                              bandwidth = bandwidth, df = df) {
+  PROB.FUNCS[[4]] <- function(n, bandwidth, df) {
 
     #Set mean-length and weights
     k <- length(means)
@@ -457,13 +502,31 @@ KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
 
     #Return output
     OUT }
-  
-  #Substitute blank input arguments for probability functions
+
+  #Link means and weights to environments of probability functions
+  environment(PROB.FUNCS[[1]]) <- list2env(list(means = means, weights = weights),
+                                           parent = environment(PROB.FUNCS[[1]]))
+  environment(PROB.FUNCS[[2]]) <- list2env(list(means = means, weights = weights),
+                                           parent = environment(PROB.FUNCS[[2]]))
+  environment(PROB.FUNCS[[3]]) <- list2env(list(means = means, weights = weights),
+                                           parent = environment(PROB.FUNCS[[3]]))
+  environment(PROB.FUNCS[[4]]) <- list2env(list(means = means, weights = weights),
+                                           parent = environment(PROB.FUNCS[[4]]))
+
+  #Set arguments for probability functions
   formals(PROB.FUNCS[[1]])$x <- substitute()
   formals(PROB.FUNCS[[2]])$x <- substitute()
   formals(PROB.FUNCS[[3]])$p <- substitute()
   formals(PROB.FUNCS[[4]])$n <- substitute()
-  
+  formals(PROB.FUNCS[[1]])$df <- df
+  formals(PROB.FUNCS[[2]])$df <- df
+  formals(PROB.FUNCS[[3]])$df <- df
+  formals(PROB.FUNCS[[4]])$df <- df
+  formals(PROB.FUNCS[[1]])$bandwidth <- bandwidth
+  formals(PROB.FUNCS[[2]])$bandwidth <- bandwidth
+  formals(PROB.FUNCS[[3]])$bandwidth <- bandwidth
+  formals(PROB.FUNCS[[4]])$bandwidth <- bandwidth
+
   #Return output
   PROB.FUNCS }
 
@@ -475,9 +538,7 @@ KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
   names(PROB.FUNCS) <- c('dkde', 'pkde', 'qkde', 'rkde')
 
   #Generate density function
-  PROB.FUNCS[[1]] <- function(x, means = means, weights = weights,
-                              bandwidth = bandwidth, df = df,
-                              log = FALSE) {
+  PROB.FUNCS[[1]] <- function(x, bandwidth, df, log = FALSE) {
 
     #Set mean-length and weights
     k <- length(means)
@@ -486,13 +547,13 @@ KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
 
     #Compute log-density values
     n <- length(x)
-    III <- complex(imaginary = 1)
+    IMAG <- complex(imaginary = 1)
     LOGDENS   <- rep(-Inf, n)
     LOGMATRIX <- matrix(0, nrow = n, ncol = k)
     for (i in 1:n) {
       if (x[i] == as.integer(x[i])) {
       LOGMATRIX[i,] <- pt((x[i]-means+0.5)/bandwidth, df = df, log = TRUE) + log(weights) +
-                       III*(pt((x[i]-means-0.5)/bandwidth, df = df, log = TRUE) + log(weights))
+                        IMAG*(pt((x[i]-means-0.5)/bandwidth, df = df, log = TRUE) + log(weights))
                         L1 <- matrixStats::logSumExp(Re(LOGMATRIX[i,]))
                         L2 <- matrixStats::logSumExp(Im(LOGMATRIX[i,]))
                         LOGDENS[i] <- L1 + VGAM::log1mexp(L1-L2) } }
@@ -501,9 +562,7 @@ KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
     if (log) { LOGDENS } else { exp(LOGDENS) } }
 
   #Generate cumulative distribution function
-  PROB.FUNCS[[2]] <- function(x, means = means, weights = weights,
-                              bandwidth = bandwidth, df = df,
-                              lower.tail = TRUE, log.p = FALSE) {
+  PROB.FUNCS[[2]] <- function(x, bandwidth, df, lower.tail = TRUE, log.p = FALSE) {
 
     #Set mean-length and weights
     k <- length(means)
@@ -522,9 +581,7 @@ KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
     if (log.p) { LOGCDF } else { exp(LOGCDF) } }
 
   #Generate quantile function
-  PROB.FUNCS[[3]] <- function(p, means = means, weights = weights,
-                              bandwidth = bandwidth, df = df,
-                              lower.tail = TRUE, log.p = FALSE) {
+  PROB.FUNCS[[3]] <- function(p, bandwidth, df, lower.tail = TRUE, log.p = FALSE) {
 
     #Set mean-length and weights
     k <- length(means)
@@ -562,8 +619,7 @@ KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
     QUANTILES }
 
   #Generate random-generation function
-  PROB.FUNCS[[4]] <- function(n, means = means, weights = weights,
-                              bandwidth = bandwidth, df = df) {
+  PROB.FUNCS[[4]] <- function(n, bandwidth, df) {
 
     #Set mean-length and weights
     k <- length(means)
@@ -579,115 +635,29 @@ KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
     #Return output
     OUT }
 
-  #Substitute blank input arguments for probability functions
+  #Link means and weights to environments of probability functions
+  environment(PROB.FUNCS[[1]]) <- list2env(list(means = means, weights = weights),
+                                           parent = environment(PROB.FUNCS[[1]]))
+  environment(PROB.FUNCS[[2]]) <- list2env(list(means = means, weights = weights),
+                                           parent = environment(PROB.FUNCS[[2]]))
+  environment(PROB.FUNCS[[3]]) <- list2env(list(means = means, weights = weights),
+                                           parent = environment(PROB.FUNCS[[3]]))
+  environment(PROB.FUNCS[[4]]) <- list2env(list(means = means, weights = weights),
+                                           parent = environment(PROB.FUNCS[[4]]))
+
+  #Set arguments for probability functions
   formals(PROB.FUNCS[[1]])$x <- substitute()
   formals(PROB.FUNCS[[2]])$x <- substitute()
   formals(PROB.FUNCS[[3]])$p <- substitute()
   formals(PROB.FUNCS[[4]])$n <- substitute()
-  
+  formals(PROB.FUNCS[[1]])$df <- df
+  formals(PROB.FUNCS[[2]])$df <- df
+  formals(PROB.FUNCS[[3]])$df <- df
+  formals(PROB.FUNCS[[4]])$df <- df
+  formals(PROB.FUNCS[[1]])$bandwidth <- bandwidth
+  formals(PROB.FUNCS[[2]])$bandwidth <- bandwidth
+  formals(PROB.FUNCS[[3]])$bandwidth <- bandwidth
+  formals(PROB.FUNCS[[4]])$bandwidth <- bandwidth
+
   #Return output
   PROB.FUNCS }
-
-
-KDE.continuous.hardcoded <- function(means, weights = NULL, bandwidth, df) {
-
-  #Set output list
-  PROB.FUNCS.HARDCODED <- vector(length = 4, mode = 'list')
-
-  #Create computational components for KDE
-  GEN.MEANS <- paste('means <-', paste(deparse(means), collapse = ''))
-  if (is.null(weights)) {
-    GEN.WEIGHTS <- 'weights <- NULL' } else {
-    GEN.WEIGHTS <- paste('weights <-', paste(deparse(weights), collapse = '')) }
-
-  #Create probability functions
-  PROB.FUNCS <- KDE.continuous(means = means, weights = weights,
-                               bandwidth = bandwidth, df = df)
-
-  #Create function-generator
-  generate_function <- function(..., commands, envir = parent.frame(),
-                                openbracket = FALSE, closebracket = FALSE) {
-    body <- paste(commands, collapse = '\n')
-    if (!openbracket)  { body <- paste(c('{', body), collapse = '\n') }
-    if (!closebracket) { body <- paste(c(body, '}'), collapse = '\n') }
-    as.function(c(..., str2lang(body)), envir = envir) }
-
-  #Generate density function
-  COMMANDS <- c(GEN.MEANS, GEN.WEIGHTS, as.character(body(PROB.FUNCS[[1]])[-1]))
-  PROB.FUNCS.HARDCODED[[1]] <- generate_function(x = NA, bandwidth = bandwidth, df = df,
-                                                 log = FALSE, commands = COMMANDS)
-
-  #Generate cumulative distribution function
-  COMMANDS <- c(GEN.MEANS, GEN.WEIGHTS, as.character(body(PROB.FUNCS[[2]])[-1]))
-  PROB.FUNCS.HARDCODED[[2]] <- generate_function(x = NA, bandwidth = bandwidth, df = df,
-                                                 lower.tail = TRUE, log.p = FALSE, commands = COMMANDS)
-
-  #Generate quantile function
-  COMMANDS <- c(GEN.MEANS, GEN.WEIGHTS, as.character(body(PROB.FUNCS[[3]])[-1]))
-  PROB.FUNCS.HARDCODED[[3]] <- generate_function(p = NA, bandwidth = bandwidth, df = df,
-                                                 lower.tail = TRUE, log.p = FALSE, commands = COMMANDS)
-
-  #Generate random generation function
-  COMMANDS <- c(GEN.MEANS, GEN.WEIGHTS, as.character(body(PROB.FUNCS[[4]])[-1]))
-  PROB.FUNCS.HARDCODED[[4]] <- generate_function(n = NA, bandwidth = bandwidth, df = df,
-                                                 commands = COMMANDS)
-
-  #Substitute blank input arguments for probability functions
-  formals(PROB.FUNCS.HARDCODED[[1]])$x <- substitute()
-  formals(PROB.FUNCS.HARDCODED[[2]])$x <- substitute()
-  formals(PROB.FUNCS.HARDCODED[[3]])$p <- substitute()
-  formals(PROB.FUNCS.HARDCODED[[4]])$n <- substitute()
-  
-  #Return output
-  PROB.FUNCS.HARDCODED }
-
-
-KDE.discrete.hardcoded <- function(means, weights = NULL, bandwidth, df) {
-
-  #Set output list
-  PROB.FUNCS.HARDCODED <- vector(length = 4, mode = 'list')
-
-  #Create computational components for KDE
-  GEN.DATA    <- paste('means <-', paste(deparse(means), collapse = ''))
-  if (is.null(weights)) {
-    GEN.WEIGHTS <- 'weights <- NULL' } else {
-      GEN.WEIGHTS <- paste('weights <-', paste(deparse(weights), collapse = '')) }
-  PROB.FUNCS <- KDE.discrete(means = means, weights = weights,
-                             bandwidth = bandwidth, df = df)
-
-    #Create function-generator
-    generate_function <- function(..., commands, envir = parent.frame(),
-                                  openbracket = FALSE, closebracket = FALSE) {
-      body <- paste(commands, collapse = '\n')
-      if (!openbracket)  { body <- paste(c('{', body), collapse = '\n') }
-      if (!closebracket) { body <- paste(c(body, '}'), collapse = '\n') }
-      as.function(c(..., str2lang(body)), envir = envir) }
-
-  #Generate density function
-  COMMANDS <- c(GEN.DATA, GEN.WEIGHTS, as.character(body(PROB.FUNCS[[1]])[-1]))
-  PROB.FUNCS.HARDCODED[[1]] <- generate_function(x = NA, bandwidth = bandwidth, df = df,
-                                                 log = FALSE, commands = COMMANDS)
-
-  #Generate cumulative distribution function
-  COMMANDS <- c(GEN.DATA, GEN.WEIGHTS, as.character(body(PROB.FUNCS[[2]])[-1]))
-  PROB.FUNCS.HARDCODED[[2]] <- generate_function(x = NA, bandwidth = bandwidth, df = df,
-                                                 lower.tail = TRUE, log.p = FALSE, commands = COMMANDS)
-
-  #Generate quantile function
-  COMMANDS <- c(GEN.DATA, GEN.WEIGHTS, as.character(body(PROB.FUNCS[[3]])[-1]))
-  PROB.FUNCS.HARDCODED[[3]] <- generate_function(p = NA, bandwidth = bandwidth, df = df,
-                                                 lower.tail = TRUE, log.p = FALSE, commands = COMMANDS)
-
-  #Generate random generation function
-  COMMANDS <- c(GEN.DATA, GEN.WEIGHTS, as.character(body(PROB.FUNCS[[4]])[-1]))
-  PROB.FUNCS.HARDCODED[[4]] <- generate_function(n = NA, bandwidth = bandwidth, df = df,
-                                                 commands = COMMANDS)
-
-  #Substitute blank input arguments for probability functions
-  formals(PROB.FUNCS.HARDCODED[[1]])$x <- substitute()
-  formals(PROB.FUNCS.HARDCODED[[2]])$x <- substitute()
-  formals(PROB.FUNCS.HARDCODED[[3]])$p <- substitute()
-  formals(PROB.FUNCS.HARDCODED[[4]])$n <- substitute()
-  
-  #Return output
-  PROB.FUNCS.HARDCODED }
