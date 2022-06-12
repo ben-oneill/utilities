@@ -3,37 +3,50 @@
 \name{softmax}
 \alias{softmax}
 \alias{softmaxinv}
-\title{Softmax and inverse-softmax functions}
+\alias{logsoftmax}
+\alias{logsoftmaxinv}
+\title{Softmax and logsoftmax functions and their inverse functions}
 \usage{
 softmax(eta, lambda = 1, gradient = FALSE, hessian = FALSE)
 
 softmaxinv(p, lambda = 1, gradient = FALSE, hessian = FALSE)
+
+logsoftmax(eta, lambda = 1, gradient = FALSE, hessian = FALSE)
+
+logsoftmaxinv(l, lambda = 1, gradient = FALSE, hessian = FALSE)
 }
 \arguments{
 \item{eta}{A numeric vector input}
 
 \item{lambda}{Tuning parameter (a single positive value)}
 
-\item{gradient}{Logical; if \code{TRUE} the output will include a \code{'gradient'} attribute}
+\item{gradient}{Logical}
 
-\item{hessian}{Logical; if \code{TRUE} the output will include a \code{'hessian'} attribute}
+\item{hessian}{Logical}
 
 \item{p}{A probability vector (i.e., numeric vector of non-negative values that sum to one)}
+
+\item{l}{A log-probability vector (i.e., numeric vector of non-positive values that logsum to zero)}
 }
 \value{
-Value of the softmax function
+Value of the softmax function or its inverse (or their log).
+If \code{gradient} or \code{hessian} is \code{TRUE}, it will be included as an attribute.
 }
 \description{
-\code{softmax} returns the value of the softmax function.
-\code{softmaxinv} returns the value of the inverse-softmax function.
+\code{softmax} returns the value of the softmax function
+\code{softmaxinv} returns the value of the inverse-softmax function
+\code{logsoftmax} returns the value of the logsoftmax function
+\code{logsoftmaxinv} returns the value of the inverse-logsoftmax function
 }
 \details{
 The softmax function is a bijective function that maps a real vector with length \code{m-1} to a probability vector
 with length \code{m} with all non-zero probabilities.  The softmax function is useful in a wide range of probability
 and statistical applications.  The present functions define the softmax function and its inverse, both with a tuning
-parameter.
+parameter.  It also defines the log-softmax function and its inverse, both with a tuning parameter.
 }
 \examples{
 softmax(5:7)
 softmaxinv(softmax(5:7))
+logsoftmax(5:7)
+logsoftmaxinv(logsoftmax(5:7))
 }
