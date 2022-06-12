@@ -20,6 +20,8 @@
 #' @param point.size Size of the points in the plot
 #' @param point.alpha Alpha-transparency of the points in the plot
 #' @return Zipf plot for the input data
+#' @examples
+#' try(zipfplot(sample(LETTERS, 300, replace = TRUE)))
 
 zipfplot <- function(x, relative.freq = TRUE, smooth.line = TRUE, smooth.conf = TRUE,
                      conf.level = 0.99, separate.plots = FALSE,
@@ -59,8 +61,8 @@ zipfplot <- function(x, relative.freq = TRUE, smooth.line = TRUE, smooth.conf = 
   #Check installed packages and load them
   GGPLOT2   <- requireNamespace('ggplot2', quietly = TRUE)
   SCALES    <- requireNamespace('scales',  quietly = TRUE)
-  if (GGPLOT2) { library(ggplot2) } else { stop('Error: Zipf plot requires the ggplot2 package') }
-  if (SCALES)  { library(scales) }  else { stop('Error: Zipf plot requires the scales package')  }
+  if (GGPLOT2) {  } else { stop('Error: Zipf plot requires the ggplot2 package') }
+  if (SCALES)  {  }  else { stop('Error: Zipf plot requires the scales package')  }
 
   #Set theme and colours
   THEME <- ggplot2::theme(plot.title    = ggplot2::element_text(hjust = 0.5, size = 14, face = 'bold'),
@@ -100,18 +102,18 @@ zipfplot <- function(x, relative.freq = TRUE, smooth.line = TRUE, smooth.conf = 
     SUBTITLE <- paste0(SUBTITLE, '\n(Bands around the smoothing line show ', round(100*conf.level, 2), '% CI)') }
 
   #Generate plot
-  ZIPFPLOT  <- ggplot2::ggplot(ggplot2::aes(x = RR, y = FF, colour = VAR, fill = VAR), data = PLOTDATA) +
+  ZIPFPLOT  <- ggplot2::ggplot(ggplot2::aes(x = !!quote(RR), y = !!quote(FF), colour = !!quote(VAR), fill = !!quote(VAR)), data = PLOTDATA) +
                ggplot2::geom_point(size = point.size) +
                { if (smooth.line) ggplot2::geom_smooth(formula = y ~ x, method = 'loess',
                                                        se = smooth.conf, level = conf.level) } +
                ggplot2::scale_x_log10() +
                ggplot2::scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
-                             labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+                             labels = scales::trans_format("log10", function(.x) scales::label_math(10^.x)(.x))) +
                ggplot2::expand_limits(y = ifelse(relative.freq, 1, n)) +
                { if (separate.plots) ggplot2::facet_wrap(~ VAR) } +
-               THEME + theme(legend.title = ggplot2::element_blank(),
+               THEME + ggplot2::theme(legend.title = ggplot2::element_blank(),
                              legend.position = ifelse(m == 1, 'none', 'bottom'),
-                             legend.spacing.x = unit(0.5, 'cm')) +
+                             legend.spacing.x = grid::unit(0.5, 'cm')) +
                ggplot2::ggtitle('Zipf Plot') +
                ggplot2::labs(subtitle = SUBTITLE) +
                ggplot2::xlab('Rank') +

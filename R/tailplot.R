@@ -49,6 +49,8 @@
 #' @param ytop.mult.left Multiplier used to determine the height of axis for left Hill/DSM plots
 #' @param ytop.mult.right Multiplier used to determine the height of axis for right Hill/DSM plots
 #' @return Tail plots for the input data (and Hill plots or DSM plots if requested)
+#' @examples
+#' try(tailplot(rnorm(500)))
 
 tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
                      show.lines = TRUE, lines = 16, line.order = 3,
@@ -128,11 +130,11 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
   #Check installed packages and load them
   GGPLOT2   <- requireNamespace('ggplot2', quietly = TRUE)
   SCALES    <- requireNamespace('scales',  quietly = TRUE)
-  if (GGPLOT2) { library(ggplot2) } else { stop('Error: Tail plot requires the ggplot2 package') }
-  if (SCALES)  { library(scales) }  else { stop('Error: Tail plot requires the scales package')  }
+  if (GGPLOT2) {  } else { stop('Error: Tail plot requires the ggplot2 package') }
+  if (SCALES)  {  }  else { stop('Error: Tail plot requires the scales package')  }
   if ((left)&(right)) {
     GRIDEXTRA <- requireNamespace('gridExtra',  quietly = TRUE)
-    if (GRIDEXTRA)  { library(gridExtra) } else {
+    if (GRIDEXTRA)  {  } else {
                       stop('Error: Tail plot requires the gridExtra package') } }
 
   #Set theme and colours
@@ -143,9 +145,7 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
   if (!is.null(point.colour)) { POINT.COLOUR <- point.colour } else { POINT.COLOUR <- 'blue' }
   if (!is.null(line.colour))  { LINE.COLOUR  <- line.colour  } else { LINE.COLOUR  <- 'darkred' }
 
-  ###############################################################################################
   #########################################  TAIL PLOT  #########################################
-  ###############################################################################################
 
   #Generate the plot data and ranges for each tail
   XORD <- sort(x, decreasing = FALSE)
@@ -176,7 +176,8 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
                          '(Faster decay than this gives finite moment of order ',
                          round(line.order-1, 4), ')') } }
 
-  #Create the left plot
+
+  ###### Create the left plot #######
   if (left) {
 
     #Set cubic lines
@@ -192,15 +193,15 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
       INTS  <- MIN.Y + (DIST/(lines-1))*((-2):(lines+1)) + line.order*MIN.X
 
       #Generate plot with cubic lines
-      TAILPLOT.LEFT  <- ggplot2::ggplot(ggplot2::aes(x = deviation.left, y = tail.prob.left),
+      TAILPLOT.LEFT  <- ggplot2::ggplot(ggplot2::aes(x = !!quote(deviation.left), y = !!quote(tail.prob.left)),
                                         data = PLOTDATA[LEFT.RANGE, ]) +
         ggplot2::geom_abline(intercept = INTS, slope = -line.order,
                              color = LINE.COLOUR, linetype = 'dashed') +
         ggplot2::geom_point(size = point.size, alpha = point.alpha, colour = POINT.COLOUR) +
         ggplot2::scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
-                               labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+                               labels = scales::trans_format("log10", function(.x) scales::label_math(10^.x)(.x))) +
         ggplot2::scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
-                               labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+                               labels = scales::trans_format("log10", function(.x) scales::label_math(10^.x)(.x))) +
         THEME +
         ggplot2::ggtitle('Tail Plot (Left)') +
         ggplot2::labs(subtitle = SUBTITLE) +
@@ -210,20 +211,20 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
     } else {
 
       #Generate plot without cubic lines
-      TAILPLOT.LEFT  <- ggplot2::ggplot(ggplot2::aes(x = deviation.left, y = tail.prob.left),
+      TAILPLOT.LEFT  <- ggplot2::ggplot(ggplot2::aes(x = !!quote(deviation.left), y = !!quote(tail.prob.left)),
                                         data = PLOTDATA[LEFT.RANGE, ]) +
         ggplot2::geom_point(size = point.size, alpha = point.alpha, colour = POINT.COLOUR) +
         ggplot2::scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
-                               labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+                               labels = scales::trans_format("log10", function(.x) scales::label_math(10^.x)(.x))) +
         ggplot2::scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
-                               labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+                               labels = scales::trans_format("log10", function(.x) scales::label_math(10^.x)(.x))) +
         THEME +
         ggplot2::ggtitle('Tail Plot (Left)') +
         ggplot2::labs(subtitle = SUBTITLE) +
         ggplot2::xlab('Left-Deviation from Maximum Value') +
         ggplot2::ylab('Empirical Tail Probability') } }
 
-  #Create the right plot
+  ###### Create the right plot #####
   if (right) {
 
     #Set cubic lines
@@ -239,15 +240,15 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
       INTS  <- MIN.Y + (DIST/(lines-1))*((-2):(lines+1)) + line.order*MIN.X
 
       #Generate plot with cubic lines
-      TAILPLOT.RIGHT <- ggplot2::ggplot(ggplot2::aes(x = deviation.right, y = tail.prob.right),
+      TAILPLOT.RIGHT <- ggplot2::ggplot(ggplot2::aes(x = !!quote(deviation.right), y = !!quote(tail.prob.right)),
                                        data = PLOTDATA[RIGHT.RANGE, ]) +
                         ggplot2::geom_abline(intercept = INTS, slope = -line.order,
                              color = LINE.COLOUR, linetype = 'dashed') +
                         ggplot2::geom_point(size = point.size, alpha = point.alpha, colour = POINT.COLOUR) +
                         ggplot2::scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
-                                    labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+                                    labels = scales::trans_format("log10", function(.x) scales::label_math(10^.x)(.x))) +
                         ggplot2::scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
-                                    labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+                                    labels = scales::trans_format("log10", function(.x)scales::label_math(10^.x)(.x))) +
                         THEME +
                         ggplot2::ggtitle('Tail Plot (Right)') +
                         ggplot2::labs(subtitle = SUBTITLE) +
@@ -259,13 +260,13 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
     } else {
 
       #Generate plot without cubic lines
-      TAILPLOT.RIGHT <- ggplot2::ggplot(ggplot2::aes(x = deviation.right, y = tail.prob.right),
+      TAILPLOT.RIGHT <- ggplot2::ggplot(ggplot2::aes(x = !!quote(deviation.right), y = !!quote(tail.prob.right)),
                                         data = PLOTDATA[RIGHT.RANGE, ]) +
                         ggplot2::geom_point(size = point.size, alpha = point.alpha, colour = POINT.COLOUR) +
                         ggplot2::scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
-                                    labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+                                    labels = scales::trans_format("log10", function(.x) scales::math_format(10^.x)(.x))) +
                         ggplot2::scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
-                                    labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+                                    labels = scales::trans_format("log10", function(.x) scales::math_format(10^.x)(.x))) +
                         THEME +
                         ggplot2::ggtitle('Tail Plot (Right)') +
                         ggplot2::labs(subtitle = SUBTITLE) +
@@ -274,9 +275,7 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
                           ggplot2::ylab('Empirical Tail Probability') } else {
                           ggplot2::ylab(NULL) } } }
 
-  ###############################################################################################
   ##############################  HILL/DE-SOUSA-MICHAILIDIS PLOTS  ##############################
-  ###############################################################################################
 
   #Create plotting data
   PLOTDATA2 <- data.frame(Index = 1:m, H.LEFT = 0, H.RIGHT = 0, S.LEFT = 0, S.RIGHT = 0)
@@ -304,7 +303,7 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
   if (left) {
 
     #Generate plot
-    HILLPLOT.LEFT  <- ggplot2::ggplot(ggplot2::aes(x = Index, y = H.LEFT), data = PLOTDATA2) +
+    HILLPLOT.LEFT  <- ggplot2::ggplot(ggplot2::aes(x = !!quote(Index), y = !!quote(H.LEFT)), data = PLOTDATA2) +
       ggplot2::geom_point(size = point.size, alpha = point.alpha, colour = POINT.COLOUR) +
       ggplot2::scale_y_continuous(limits = c(0, MAX.H.LEFT)) +
       THEME +
@@ -312,7 +311,7 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
       ggplot2::labs(subtitle = SUBTITLE2) +
       ggplot2::xlab('Points in Tail') +
       ggplot2::ylab('Adjusted Hill Estimator')
-    DSMPLOT.LEFT   <- ggplot2::ggplot(ggplot2::aes(x = Index, y = S.LEFT), data = PLOTDATA2) +
+    DSMPLOT.LEFT   <- ggplot2::ggplot(ggplot2::aes(x = !!quote(Index), y = !!quote(S.LEFT)), data = PLOTDATA2) +
       ggplot2::geom_point(size = point.size, alpha = point.alpha, colour = POINT.COLOUR) +
       ggplot2::scale_y_continuous(limits = c(0, MAX.S.LEFT)) +
       THEME +
@@ -325,7 +324,7 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
   if (right) {
 
     #Generate plots
-    HILLPLOT.RIGHT <- ggplot2::ggplot(ggplot2::aes(x = Index, y = H.RIGHT), data = PLOTDATA2) +
+    HILLPLOT.RIGHT <- ggplot2::ggplot(ggplot2::aes(x = !!quote(Index), y = !!quote(H.RIGHT)), data = PLOTDATA2) +
       ggplot2::geom_point(size = point.size, alpha = point.alpha, colour = POINT.COLOUR) +
       ggplot2::scale_y_continuous(limits = c(0, MAX.H.RIGHT)) +
       THEME +
@@ -335,7 +334,7 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
       if (!left) {
         ggplot2::ylab('Adjusted Hill Estimator') } else {
         ggplot2::ylab(NULL) }
-    DSMPLOT.RIGHT  <- ggplot2::ggplot(ggplot2::aes(x = Index, y = S.RIGHT), data = PLOTDATA2) +
+    DSMPLOT.RIGHT  <- ggplot2::ggplot(ggplot2::aes(x = !!quote(Index), y = !!quote(S.RIGHT)), data = PLOTDATA2) +
       ggplot2::geom_point(size = point.size, alpha = point.alpha, colour = POINT.COLOUR) +
       ggplot2::scale_y_continuous(limits = c(0, MAX.S.RIGHT)) +
       THEME +
@@ -346,9 +345,7 @@ tailplot <- function(x, tail.prop = 0.05, left = TRUE, right = TRUE,
         ggplot2::ylab('Adjusted DSM Estimator') } else {
         ggplot2::ylab(NULL) } }
 
-  ###############################################################################################
   #########################################  FULL PLOT  #########################################
-  ###############################################################################################
 
   #Set spacing object
   SPACE <- ggplot2::theme(plot.margin = ggplot2::margin(t = 5.5, r = 5.5, b = 16.5, l = 5.5))

@@ -21,7 +21,6 @@
 #' degrees-of-freedom is higher than this value then the algorithm will round the value to infinity
 #' (i.e., using the normal-distribution kernel instead of the T-distribution kernel).
 #'
-#' @usage \code{KDE}
 #' @param data Input data for the kernel density estimator (a numeric vector)
 #' @param weights Weights for the kernel density estimator (a numeric vector with the same length as the data)
 #' @param bandwidth Bandwidth for the KDE; if \code{NULL} it is estimated using LOO-MLE
@@ -34,6 +33,11 @@
 #' @param to.environment Logical; if \code{TRUE} the probability functions are attached to the global environment
 #' @param envir The environment where the probability functions are loaded (if \code{to.environment} is \code{TRUE})
 #' @return A \code{kde} object containing the probability functions for the kernel density estimator
+#' @examples
+#' k <- KDE(rnorm(500))
+#' print(k)
+#' plot(k)
+#' KDE.load(k, environment()); ls()
 
 KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 1000,
                  density.name = 'kde', value.name = 'Value',
@@ -93,9 +97,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
   if (length(to.environment) != 1)        stop('Error: Input to.environment should be a single logical value')
   if (!is.environment(envir))             stop('Error: Input envir should be an environment')
 
-  ############################################################################################################
   ######################################## Estimate the KDE parameters #######################################
-  ############################################################################################################
 
   #Set the means and weights for KDE
   DATA <- data
@@ -150,9 +152,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
     DF   <- df
     if (DF > df.norm) { DF <- Inf } }
 
-  ############################################################################################################
   ###################################### Generate and return the output ######################################
-  ############################################################################################################
 
   #Create output list
   OUT <- vector(mode = 'list', length = 17)
@@ -177,7 +177,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
 
   #Generate probability functions for continuous KDE
   if (!discrete) {
-    PROB.FUNCS <- KDE.continuous(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
+    PROB.FUNCS <- .KDE.continuous(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
     OUT[[1]] <- PROB.FUNCS[[1]]
     OUT[[2]] <- PROB.FUNCS[[2]]
     OUT[[3]] <- PROB.FUNCS[[3]]
@@ -185,7 +185,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
 
   #Generate probability functions for continuous KDE
   if (discrete) {
-    PROB.FUNCS <- KDE.discrete(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
+    PROB.FUNCS <- .KDE.discrete(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
     OUT[[1]] <- PROB.FUNCS[[1]]
     OUT[[2]] <- PROB.FUNCS[[2]]
     OUT[[3]] <- PROB.FUNCS[[3]]
@@ -215,7 +215,18 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
   #Return output
   OUT }
 
+#' Utilities for KDE fits
+#'
+#' @name KDE_utils
+NULL
 
+#' \code{KDE.load} copies KDE distribution functions from a KDE object to a target environment.
+#'
+#' @rdname KDE_utils
+#' @param object,x A KDE object
+#' @param envir The target environment
+#' @param overwrite If FALSE, aborts if the function names are already present in the target environment
+#' @return KDE.load returns \code{envir}
 KDE.load <- function (object, envir = NULL, overwrite = TRUE) {
 
   #Check object class
@@ -268,29 +279,33 @@ KDE.load <- function (object, envir = NULL, overwrite = TRUE) {
   #Load functions to the loading environment (if appropriate)
   invisible(list2env(LOAD, envir = envir)) }
 
-
-print.kde <- function(object, digits = 6) {
+#' \code{print.kde} prints the KDE object and returns it invisibly.
+#'
+#' @rdname KDE_utils
+#' @param digits Number of digits to print
+#' @return \code{print.kde} returns \code{x}, invisibly
+print.kde <- function(x, digits = 6, ...) {
 
   #Check object class
-  if (!('kde' %in% class(object)))    stop('Error: This print method is only used for objects of class \'kde\'')
+  if (!('kde' %in% class(x)))    stop('Error: This print method is only used for objects of class \'kde\'')
   if (!is.numeric(digits))            stop('Error: Input digits should be a numeric value')
   if (length(digits) != 1)            stop('Error: Input digits should be a single numeric value')
   if (as.integer(digits) != digits)   stop('Error: Input digits should be an integer')
   if (min(digits) <= 1)               stop('Error: Input digits must be positive')
 
   #Extract information
-  k  <- length(object$data)
-  bw <- object$bandwidth
-  df <- object$df
-  nn <- names(object)[1:4]
-  data.name    <- object$data.name
-  weights.name <- object$weights.name
-  weighted     <- object$weighted
-  band.est     <- object$bandwidth.est
-  df.est       <- object$df.est
-  discrete     <- object$discrete
-  to.env       <- object$to.environment
-  envir        <- object$envir
+  k  <- length(x$data)
+  bw <- x$bandwidth
+  df <- x$df
+  nn <- names(x)[1:4]
+  data.name    <- x$data.name
+  weights.name <- x$weights.name
+  weighted     <- x$weighted
+  band.est     <- x$bandwidth.est
+  df.est       <- x$df.est
+  discrete     <- x$discrete
+  to.env       <- x$to.environment
+  envir        <- x$envir
 
   #Print title
   if (!discrete) { cat('\n  Kernel Density Estimator (KDE) \n \n') }
@@ -314,10 +329,10 @@ print.kde <- function(object, digits = 6) {
 
   #Print information on probability functions
   STAR <- rep(FALSE, 4)
-  if (exists(nn[1])) { if (identical(get(nn[1], envir = envir), object[[1]])) { STAR[1] <- TRUE } }
-  if (exists(nn[2])) { if (identical(get(nn[2], envir = envir), object[[2]])) { STAR[2] <- TRUE } }
-  if (exists(nn[3])) { if (identical(get(nn[3], envir = envir), object[[3]])) { STAR[3] <- TRUE } }
-  if (exists(nn[4])) { if (identical(get(nn[4], envir = envir), object[[4]])) { STAR[4] <- TRUE } }
+  if (exists(nn[1])) { if (identical(get(nn[1], envir = envir), x[[1]])) { STAR[1] <- TRUE } }
+  if (exists(nn[2])) { if (identical(get(nn[2], envir = envir), x[[2]])) { STAR[2] <- TRUE } }
+  if (exists(nn[3])) { if (identical(get(nn[3], envir = envir), x[[3]])) { STAR[3] <- TRUE } }
+  if (exists(nn[4])) { if (identical(get(nn[4], envir = envir), x[[4]])) { STAR[4] <- TRUE } }
   if (!discrete) { cat('  Probability functions for the KDE are the following: \n \n') }
   if (discrete)  { cat('  Probability functions for the discrete KDE are the following: \n \n') }
   cat('      Density function:                  ', nn[1], ifelse(STAR[1], '*', ''), '\n',
@@ -329,14 +344,23 @@ print.kde <- function(object, digits = 6) {
       cat('  * This function is presently loaded in the global environment \n \n')
     } else {
     cat('  * This function is presently loaded in the environment \'',
-        deparse(substitute(envir)), '\' \n \n') } } }
+        deparse(substitute(envir)), '\' \n \n') } }
 
+  invisible(x)
+}
 
-plot.kde <- function(object, digits = 6, n = 512, cut = 4,
-                     fill.colour = 'dodgerblue', fill.color = fill.colour) {
+#' \code{plot.kde} draws a plot of the KDE.
+#' @rdname KDE_utils
+#' @param n number of bins
+#' @param cut cutoffs for xaxis (in steps of bw)
+#' @param fill.colour,fill.color  fill color of bars
+#' @param ... unused
+#' @returns \code{plot.kde} returns the plot as recorded by \code{recordPlot}
+plot.kde <- function(x, digits = 6, n = 512, cut = 4,
+                     fill.colour = 'dodgerblue', fill.color = fill.colour, ...) {
 
   #Check object class
-  if (!('kde' %in% class(object)))    stop('Error: This plot method is only used for objects of class \'kde\'')
+  if (!('kde' %in% class(x)))    stop('Error: This plot method is only used for objects of class \'kde\'')
 
   #Check inputs
   if (!is.numeric(digits))            stop('Error: Input digits should be a numeric value')
@@ -356,14 +380,14 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 4,
   if (!fill.color %in% colours())     stop('Error: Input fill.colour/color must be in \'colours()\'')
 
   #Extract information
-  df   <- object$df
-  bw   <- object$bandwidth
-  data <- object$data
-  dens <- object[[1]]
-  band.est   <- object$bandwidth.est
-  df.est     <- object$df.est
-  discrete   <- object$discrete
-  value.name <- object$value.name
+  df   <- x$df
+  bw   <- x$bandwidth
+  data <- x$data
+  dens <- x[[1]]
+  band.est   <- x$bandwidth.est
+  df.est     <- x$df.est
+  discrete   <- x$discrete
+  value.name <- x$value.name
 
   #Compute value range for the plot
   xmin <- min(data) - bw*cut
@@ -405,7 +429,7 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 4,
   PLOT }
 
 
-KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
+.KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
 
   #Set output list
   PROB.FUNCS <- vector(length = 4, mode = 'list')
@@ -458,6 +482,7 @@ KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
     if (!weighted) { weights <- rep(1/k, k) }
 
     #Compute approximate quantiles
+    n <- length(p)
     if (log.p) { LOGP <- p } else { LOGP <- log(p) }
     if (!lower.tail) { LOGP <- VGAM::log1mexp(-LOGP) }
     QUANTILES.APPROX <- quantile(x = means, probs = exp(LOGP), names = FALSE)
@@ -531,7 +556,7 @@ KDE.continuous <- function(means, weights = NULL, bandwidth, df) {
   PROB.FUNCS }
 
 
-KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
+.KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
 
   #Set output list
   PROB.FUNCS <- vector(length = 4, mode = 'list')
@@ -552,8 +577,8 @@ KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
     LOGMATRIX <- matrix(0, nrow = n, ncol = k)
     for (i in 1:n) {
       if (x[i] == as.integer(x[i])) {
-      LOGMATRIX[i,] <- pt((x[i]-means+0.5)/bandwidth, df = df, log = TRUE) + log(weights) +
-                        IMAG*(pt((x[i]-means-0.5)/bandwidth, df = df, log = TRUE) + log(weights))
+      LOGMATRIX[i,] <- pt((x[i]-means+0.5)/bandwidth, df = df, log.p = TRUE) + log(weights) +
+                        IMAG*(pt((x[i]-means-0.5)/bandwidth, df = df, log.p = TRUE) + log(weights))
                         L1 <- matrixStats::logSumExp(Re(LOGMATRIX[i,]))
                         L2 <- matrixStats::logSumExp(Im(LOGMATRIX[i,]))
                         LOGDENS[i] <- L1 + VGAM::log1mexp(L1-L2) } }
@@ -589,6 +614,7 @@ KDE.discrete <- function (means, weights = NULL, bandwidth, df) {
     if (!weighted) { weights <- rep(1/k, k) }
 
     #Compute approximate quantiles
+    n <- length(p)
     if (log.p) { LOGP <- p } else { LOGP <- log(p) }
     if (!lower.tail) { LOGP <- VGAM::log1mexp(-LOGP) }
     QUANTILES.APPROX <- quantile(x = means, probs = exp(LOGP), names = FALSE)
