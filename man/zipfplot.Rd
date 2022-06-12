@@ -50,3 +50,6 @@ If the input data is a matrix or data frame then each column will be treated as 
 and the output will be a single Zipf plot showing each of the variables.  The user can control
 whether the variables are shown on a single plot or separate plots.
 }
+\examples{
+try(zipfplot(sample(LETTERS, 300, replace = TRUE)))
+}

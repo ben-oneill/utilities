@@ -4,7 +4,19 @@
 \alias{KDE}
 \title{Kernel Density Estimator}
 \usage{
-\code{KDE}
+KDE(
+  data,
+  weights = NULL,
+  bandwidth = NULL,
+  df = NULL,
+  df.norm = 1000,
+  density.name = "kde",
+  value.name = "Value",
+  discrete = FALSE,
+  discrete.warn = TRUE,
+  to.environment = FALSE,
+  envir = .GlobalEnv
+)
 }
 \arguments{
 \item{data}{Input data for the kernel density estimator (a numeric vector)}
@@ -54,4 +66,10 @@ Note: For simplicity, the function uses a value \code{df.norm} which is the maxi
 degrees-of-freedom that is recognised as differing from normality.  If the inputted or estimated
 degrees-of-freedom is higher than this value then the algorithm will round the value to infinity
 (i.e., using the normal-distribution kernel instead of the T-distribution kernel).
+}
+\examples{
+k <- KDE(rnorm(500))
+print(k)
+plot(k)
+KDE.load(k, environment()); ls()
 }

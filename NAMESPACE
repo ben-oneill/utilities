@@ -3,6 +3,12 @@ importFrom("grDevices", "colours")
 importFrom("stats", "as.formula", "quantile", "sd")
 importFrom("utils", "data", "str", "read.table")
 
+# Version 0.6 imports
+importFrom("grDevices", "dev.off", "recordPlot")
+importFrom("graphics", "barplot", "mtext", "polygon", "title")
+importFrom("stats", "dt", "nlm", "pt", "rt", "var")
+importFrom("utils", "capture.output")
+
 
 S3method("print", "data.mappings")
 S3method("plot", "data.mappings")

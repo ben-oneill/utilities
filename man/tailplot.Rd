@@ -75,3 +75,6 @@ used to diagnose the existence of moments of other orders.
 De Sousa, B. and Michailidis, G. (2004) A Diagnostic Plot for Estimating the Tail Index of a
 Distribution.  Journal of Computational and Graphical Statistics 13(4), pp. 1-22.
 }
+\examples{
+try(tailplot(rnorm(500)))
+}
