@@ -69,7 +69,6 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = Inf,
   if (length(df) != 1)                    stop('Error: Input df should be a single numeric value')
   if (min(df) <= 0)                       stop('Error: Input df should be a positive value')
 
-
   #Check discrete
   if (!is.logical(discrete))              stop('Error: Input discrete should be a logical value')
   if (length(discrete) != 1)              stop('Error: Input discrete should be a single logical value')
@@ -230,8 +229,7 @@ KDE.load <- function (object, envir = NULL, overwrite = TRUE) {
 print.kde <- function(x, digits = 6, ...) {
 
   #Check object class
-  if (!('kde' %in% class(x)))    stop('Error: This print method is only used for objects of class \'kde\'')
-  if (!is.numeric(digits))            stop('Error: Input digits should be a numeric value')
+  if (!('kde' %in% class(x)))    stop('Error: This print method is only used for objects of class \'kde\'')  if (!is.numeric(digits))            stop('Error: Input digits should be a numeric value')
   if (length(digits) != 1)            stop('Error: Input digits should be a single numeric value')
   if (as.integer(digits) != digits)   stop('Error: Input digits should be an integer')
   if (min(digits) <= 1)               stop('Error: Input digits must be positive')
