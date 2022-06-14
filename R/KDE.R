@@ -119,7 +119,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = Inf,
 
   #Generate probability functions for continuous KDE
   if (!discrete) {
-    PROB.FUNCS <- KDE.continuous(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
+    PROB.FUNCS <- .KDE.continuous(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
     OUT[[1]] <- PROB.FUNCS[[1]]
     OUT[[2]] <- PROB.FUNCS[[2]]
     OUT[[3]] <- PROB.FUNCS[[3]]
@@ -127,7 +127,7 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = Inf,
 
   #Generate probability functions for continuous KDE
   if (discrete) {
-    PROB.FUNCS <- KDE.discrete(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
+    PROB.FUNCS <- .KDE.discrete(means = DATA, weights = WEIGHTS, bandwidth = BAND, df = DF)
     OUT[[1]] <- PROB.FUNCS[[1]]
     OUT[[2]] <- PROB.FUNCS[[2]]
     OUT[[3]] <- PROB.FUNCS[[3]]
