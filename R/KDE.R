@@ -5,28 +5,24 @@
 #' The kernel density estimator for a set of input data is obtained by taking a mixture distribution
 #' consisting of a (possibly weighted) combination of kernels.  In this function we compute the KDE
 #' using the kernel of the T-distribution; the function can also estimate a discretised version of the
-#' KDE, taken over the integers, if required.  The degrees-of-freedom and the bandwidth for the KDE can
-#' be specified in the inputs; if they are not specified then they are estimated using leave-one-out
-#' maximum-likelihood estimation (LOO-MLE).  The output of the function is a list of class \code{kde}
-#' that contains the probability functions for the KDE and associated information.  The output object
-#' can be plotted to show the density function for the KDE.
+#' KDE (taken over the integers) if required.  The degrees-of-freedom and the bandwidth for the KDE can
+#' be specified in the inputs; if the bandwidth is not specified then it are estimated using the methods
+#' set out in Sheather and Jones (1991) used in the \code{stats::density} function.  The output of the
+#' function is a list of class \code{kde} that contains the probability functions for the KDE and
+#' associated information.  The output object can be plotted to show the density function for the KDE.
 #'
 #' Note: The function has an option \code{to.environment} to allow the user to load the probability
-#' functions to the global environment.  If this is set to \code{TRUE} then the probability functions
-#' are loaded to the global environment in addition to appearing as elements of the output; there is
-#' a message informing the user if existing objects in the global environment were overwritten.
-#'
-#' Note: For simplicity, the function uses a value \code{df.norm} which is the maximum value of the
-#' degrees-of-freedom that is recognised as differing from normality.  If the inputted or estimated
-#' degrees-of-freedom is higher than this value then the algorithm will round the value to infinity
-#' (i.e., using the normal-distribution kernel instead of the T-distribution kernel).
+#' functions to the global environment or another specified environment.  If this is set to \code{TRUE}
+#' then the probability functions are loaded to the specified environment in addition to appearing as
+#' elements of the output; there is a message informing the user if existing objects in the global
+#' environment were overwritten.  If the functions are not loaded to the environment then the user
+#' can use the function \code{KDE.load} to load them later from the produced object.
 #'
 #' @usage \code{KDE}
 #' @param data Input data for the kernel density estimator (a numeric vector)
 #' @param weights Weights for the kernel density estimator (a numeric vector with the same length as the data)
-#' @param bandwidth Bandwidth for the KDE; if \code{NULL} it is estimated using LOO-MLE
-#' @param df Degrees-of-freedom for the T-distribution; if \code{NULL} it is estimated using LOO-MLE
-#' @param df.norm Maximum recognised value for the degrees-of-freedom; rounded up to Inf if above this value
+#' @param bandwidth Bandwidth for the KDE; if \code{NULL} it is estimated
+#' @param df Degrees-of-freedom for the T-distribution
 #' @param density.name Name of the KDE distribution; used for naming of the probability functions (a character string)
 #' @param value.name Name of the values in the data; used for naming the plot of the KDE
 #' @param discrete Logical; if \code{TRUE} the function produces a discrete KDE over the integers
@@ -35,7 +31,7 @@
 #' @param envir The environment where the probability functions are loaded (if \code{to.environment} is \code{TRUE})
 #' @return A \code{kde} object containing the probability functions for the kernel density estimator
 
-KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 1000,
+KDE <- function (data, weights = NULL, bandwidth = NULL, df = Inf,
                  density.name = 'kde', value.name = 'Value',
                  discrete = FALSE, discrete.warn = TRUE,
                  to.environment = FALSE, envir = .GlobalEnv) {
@@ -65,15 +61,9 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
     if (length(bandwidth) != 1)           stop('Error: Input bandwidth should be a single numeric value')
     if (min(bandwidth) <= 0)              stop('Error: Input bandwidth should be a positive value') } else {
     BAND.EST <- TRUE }
-  if (!is.null(df)) {
-    DF.EST <- FALSE
-    if (!is.numeric(df))                  stop('Error: Input df should be a numeric value')
-    if (length(df) != 1)                  stop('Error: Input df should be a single numeric value')
-    if (min(df) <= 0)                     stop('Error: Input df should be a positive value') } else {
-    DF.EST <- TRUE }
-  if (!is.numeric(df.norm))               stop('Error: Input df.norm should be numeric value')
-  if (length(df.norm) != 1)               stop('Error: Input df.norm should be a single numeric value')
-  if (min(df.norm) < 0)                   stop('Error: Input df.norm cannot be negative')
+  if (!is.numeric(df))                    stop('Error: Input df should be a numeric value')
+  if (length(df) != 1)                    stop('Error: Input df should be a single numeric value')
+  if (min(df) <= 0)                       stop('Error: Input df should be a positive value')
 
   #Check discrete
   if (!is.logical(discrete))              stop('Error: Input discrete should be a logical value')
@@ -94,71 +84,22 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
   if (!is.environment(envir))             stop('Error: Input envir should be an environment')
 
   ############################################################################################################
-  ######################################## Estimate the KDE parameters #######################################
-  ############################################################################################################
-
-  #Set the means and weights for KDE
-  DATA <- data
-  k <- length(DATA)
-  if (is.null(weights)) { WEIGHTS <- NULL } else { WEIGHTS <- weights/sum(weights) }
-
-  #Estimate the parameters via LOO-MLE (if not given)
-  #Case where df is given and bandwidth is to be estimated
-  if ((BAND.EST)&(!DF.EST)) {
-    NEGLOGLIKE <- function(p) {
-      VEC <- rep(0, k)
-      if (is.null(WEIGHTS)) { WEIGHTS <- rep(1/k, k) }
-      for (i in 1:k) {
-        DDD <- dt((DATA[-i]-DATA[i])*exp(-p), df = df, log = TRUE) - p + log(WEIGHTS[-i])
-        VEC[i] <- matrixStats::logSumExp(DDD) }
-      -sum(VEC) }
-    NLM  <- nlm(f = NEGLOGLIKE, p = 0.5*log(var(DATA)))
-    BAND <- exp(NLM$estimate)
-    DF   <- df }
-
-  #Case where df is to be estimated and bandwidth is given
-  if ((!BAND.EST)&(DF.EST)) {
-    NEGLOGLIKE <- function(p) {
-      VEC <- rep(0, k)
-      if (is.null(WEIGHTS)) { WEIGHTS <- rep(1/k, k) }
-      for (i in 1:k) {
-        DDD <- dt((DATA[-i]-DATA[i])/bandwidth, df = exp(p), log = TRUE) + log(WEIGHTS[-i])
-        VEC[i] <- matrixStats::logSumExp(DDD) }
-      -sum(VEC) }
-    NLM  <- nlm(f = NEGLOGLIKE, p = log(1000))
-    BAND <- bandwidth
-    DF   <- exp(NLM$estimate)
-    if (DF > df.norm) { DF <- Inf } }
-
-  #Case where df and bandwidth are both to be estimated
-  if ((BAND.EST)&(DF.EST)) {
-    NEGLOGLIKE <- function(p) {
-      VEC <- rep(0, k)
-      if (is.null(WEIGHTS)) { WEIGHTS <- rep(1/k, k) }
-      for (i in 1:k) {
-        DDD <- dt((DATA[-i]-DATA[i])*exp(-p[1]), df = exp(p[2]), log = TRUE) - p[1] + log(WEIGHTS[-i])
-        VEC[i] <- matrixStats::logSumExp(DDD) }
-      -sum(VEC) }
-    NLM  <- nlm(f = NEGLOGLIKE, p = c(0.5*log(var(DATA)), log(1000)))
-    BAND <- exp(NLM$estimate[1])
-    DF   <- exp(NLM$estimate[2])
-    if (DF > df.norm) { DF <- Inf } }
-
-  #Case where df and bandwidth are both given
-  if ((!BAND.EST)&(!DF.EST)) {
-    BAND <- bandwidth
-    DF   <- df
-    if (DF > df.norm) { DF <- Inf } }
-
-  ############################################################################################################
   ###################################### Generate and return the output ######################################
   ############################################################################################################
+
+  #Set the means and weights for KDE and estimate bandwidth
+  DATA <- data
+  k <- length(DATA)
+  DF <- df
+  if (is.null(weights))    { WEIGHTS <- NULL } else { WEIGHTS <- weights/sum(weights) }
+  if (is.null(bandwidth))  { BAND <- stats::density(DATA, weights = WEIGHTS)$bw } else {
+                             BAND <- bandwidth }
 
   #Create output list
   OUT <- vector(mode = 'list', length = 17)
   names(OUT)[1:4]  <- PROB.NAMES <- paste0(c('d', 'p', 'q', 'r'), density.name)
-  names(OUT)[5:17] <- c('data.name', 'data', 'weighted', 'weights.name', 'weights',
-                        'bandwidth', 'bandwidth.est', 'df', 'df.est', 'call', 'discrete',
+  names(OUT)[5:16] <- c('data.name', 'data', 'weighted', 'weights.name', 'weights',
+                        'bandwidth', 'bandwidth.est', 'df', 'call', 'discrete',
                         'value.name', 'envir')
   OUT[[5]]   <- DATA.NAME
   OUT[[6]]   <- DATA
@@ -168,11 +109,10 @@ KDE <- function (data, weights = NULL, bandwidth = NULL, df = NULL, df.norm = 10
   OUT[[10]]  <- BAND
   OUT[[11]]  <- BAND.EST
   OUT[[12]]  <- DF
-  OUT[[13]]  <- DF.EST
-  OUT[[14]]  <- deparse(CALL)
-  OUT[[15]]  <- discrete
-  OUT[[16]]  <- value.name
-  OUT[[17]]  <- envir
+  OUT[[13]]  <- deparse(CALL)
+  OUT[[14]]  <- discrete
+  OUT[[15]]  <- value.name
+  OUT[[16]]  <- envir
   class(OUT) <- 'kde'
 
   #Generate probability functions for continuous KDE
@@ -287,7 +227,6 @@ print.kde <- function(object, digits = 6) {
   weights.name <- object$weights.name
   weighted     <- object$weighted
   band.est     <- object$bandwidth.est
-  df.est       <- object$df.est
   discrete     <- object$discrete
   to.env       <- object$to.environment
   envir        <- object$envir
@@ -305,12 +244,11 @@ print.kde <- function(object, digits = 6) {
     cat('  Estimated bandwidth =', formatC(bw, digits = digits, format = 'f'), ' \n')
   } else {
     cat('  Input bandwidth =', formatC(bw, digits = digits, format = 'f'), ' \n') }
-  if (df.est) {
-    cat('  Estimated degrees-of-freedom = ')
-    if (df == Inf) { cat('Inf \n \n') } else { cat(formatC(df, digits = digits, format = 'f'), ' \n \n') }
+  cat('  Input degrees-of-freedom = ')
+  if (df == Inf) {
+    cat('Inf \n \n')
   } else {
-    cat('  Input degrees-of-freedom = ')
-    if (df == Inf) { cat('Inf \n \n') } else { cat(formatC(df, digits = digits, format = 'f'), ' \n \n') } }
+    cat(formatC(df, digits = digits, format = 'f'), ' \n \n') }
 
   #Print information on probability functions
   STAR <- rep(FALSE, 4)
@@ -361,7 +299,6 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 4,
   data <- object$data
   dens <- object[[1]]
   band.est   <- object$bandwidth.est
-  df.est     <- object$df.est
   discrete   <- object$discrete
   value.name <- object$value.name
 
@@ -370,7 +307,7 @@ plot.kde <- function(object, digits = 6, n = 512, cut = 4,
   xmax <- max(data) + bw*cut
 
   #Create the subtitle
-  if (df.est)   { E1 <- 'Estimated degrees-of-freedom = ' } else { E1 <- 'Input degrees-of-freedom = ' }
+  E1 <- 'Input degrees-of-freedom = '
   if (band.est) { E2 <- 'Estimated bandwidth = '          } else { E2 <- 'Input bandwidth = '          }
   SUBTITLE <- paste0( '(', E1, if (df == Inf) { '\U221E' } else { formatC(df, digits = digits, format = 'f') },
                      ', ', E2, formatC(bw, digits = digits, format = 'f'), ')')
