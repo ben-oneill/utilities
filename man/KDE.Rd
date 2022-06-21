@@ -8,8 +8,7 @@ KDE(
   data,
   weights = NULL,
   bandwidth = NULL,
-  df = NULL,
-  df.norm = 1000,
+  df = Inf,
   density.name = "kde",
   value.name = "Value",
   discrete = FALSE,
@@ -23,11 +22,9 @@ KDE(
 
 \item{weights}{Weights for the kernel density estimator (a numeric vector with the same length as the data)}
 
-\item{bandwidth}{Bandwidth for the KDE; if \code{NULL} it is estimated using LOO-MLE}
+\item{bandwidth}{Bandwidth for the KDE; if \code{NULL} it is estimated}
 
-\item{df}{Degrees-of-freedom for the T-distribution; if \code{NULL} it is estimated using LOO-MLE}
-
-\item{df.norm}{Maximum recognised value for the degrees-of-freedom; rounded up to Inf if above this value}
+\item{df}{Degrees-of-freedom for the T-distribution}
 
 \item{density.name}{Name of the KDE distribution; used for naming of the probability functions (a character string)}
 
@@ -51,21 +48,18 @@ A \code{kde} object containing the probability functions for the kernel density 
 The kernel density estimator for a set of input data is obtained by taking a mixture distribution
 consisting of a (possibly weighted) combination of kernels.  In this function we compute the KDE
 using the kernel of the T-distribution; the function can also estimate a discretised version of the
-KDE, taken over the integers, if required.  The degrees-of-freedom and the bandwidth for the KDE can
-be specified in the inputs; if they are not specified then they are estimated using leave-one-out
-maximum-likelihood estimation (LOO-MLE).  The output of the function is a list of class \code{kde}
-that contains the probability functions for the KDE and associated information.  The output object
-can be plotted to show the density function for the KDE.
+KDE (taken over the integers) if required.  The degrees-of-freedom and the bandwidth for the KDE can
+be specified in the inputs; if the bandwidth is not specified then it are estimated using the methods
+set out in Sheather and Jones (1991) used in the \code{stats::density} function.  The output of the
+function is a list of class \code{kde} that contains the probability functions for the KDE and
+associated information.  The output object can be plotted to show the density function for the KDE.
 
 Note: The function has an option \code{to.environment} to allow the user to load the probability
-functions to the global environment.  If this is set to \code{TRUE} then the probability functions
-are loaded to the global environment in addition to appearing as elements of the output; there is
-a message informing the user if existing objects in the global environment were overwritten.
-
-Note: For simplicity, the function uses a value \code{df.norm} which is the maximum value of the
-degrees-of-freedom that is recognised as differing from normality.  If the inputted or estimated
-degrees-of-freedom is higher than this value then the algorithm will round the value to infinity
-(i.e., using the normal-distribution kernel instead of the T-distribution kernel).
+functions to the global environment or another specified environment.  If this is set to \code{TRUE}
+then the probability functions are loaded to the specified environment in addition to appearing as
+elements of the output; there is a message informing the user if existing objects in the global
+environment were overwritten.  If the functions are not loaded to the environment then the user
+can use the function \code{KDE.load} to load them later from the produced object.
 }
 \examples{
 k <- KDE(rnorm(500))
