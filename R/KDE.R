@@ -229,7 +229,8 @@ KDE.load <- function (object, envir = NULL, overwrite = TRUE) {
 print.kde <- function(x, digits = 6, ...) {
 
   #Check object class
-  if (!('kde' %in% class(x)))    stop('Error: This print method is only used for objects of class \'kde\'')  if (!is.numeric(digits))            stop('Error: Input digits should be a numeric value')
+  if (!inherits(x, 'kde'))            stop('Error: This print method is only used for objects of class \'kde\'')
+  if (!is.numeric(digits))            stop('Error: Input digits should be a numeric value')
   if (length(digits) != 1)            stop('Error: Input digits should be a single numeric value')
   if (as.integer(digits) != digits)   stop('Error: Input digits should be an integer')
   if (min(digits) <= 1)               stop('Error: Input digits must be positive')
@@ -268,10 +269,10 @@ print.kde <- function(x, digits = 6, ...) {
 
   #Print information on probability functions
   STAR <- rep(FALSE, 4)
-  if (exists(nn[1])) { if (identical(get(nn[1], envir = envir), object[[1]])) { STAR[1] <- TRUE } }
-  if (exists(nn[2])) { if (identical(get(nn[2], envir = envir), object[[2]])) { STAR[2] <- TRUE } }
-  if (exists(nn[3])) { if (identical(get(nn[3], envir = envir), object[[3]])) { STAR[3] <- TRUE } }
-  if (exists(nn[4])) { if (identical(get(nn[4], envir = envir), object[[4]])) { STAR[4] <- TRUE } }
+  if (exists(nn[1])) { if (identical(get(nn[1], envir = envir), x[[1]])) { STAR[1] <- TRUE } }
+  if (exists(nn[2])) { if (identical(get(nn[2], envir = envir), x[[2]])) { STAR[2] <- TRUE } }
+  if (exists(nn[3])) { if (identical(get(nn[3], envir = envir), x[[3]])) { STAR[3] <- TRUE } }
+  if (exists(nn[4])) { if (identical(get(nn[4], envir = envir), x[[4]])) { STAR[4] <- TRUE } }
   if (!discrete) { cat('  Probability functions for the KDE are the following: \n \n') }
   if (discrete)  { cat('  Probability functions for the discrete KDE are the following: \n \n') }
   cat('      Density function:                  ', nn[1], ifelse(STAR[1], '*', ''), '\n',
