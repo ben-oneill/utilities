@@ -1,8 +1,8 @@
 Package: utilities
 Type: Package
 Title: Data Utility Functions
-Version: 0.6.0
-Date: 2022-06-22
+Version: 0.6.1
+Date: 2022-06-30
 Authors@R: person("Ben", "O'Neill", email = "ben.oneill@hotmail.com", role = c("aut", "cre"))
 Author: Ben O'Neill [aut, cre]
 Maintainer: Ben O'Neill <ben.oneill@hotmail.com>

@@ -19,7 +19,7 @@
 #' @param max numeric or \code{NULL}, specifying the maximal number of entries to be printed. By default, when \code{NULL}, \code{getOption("max.print")} used
 #' @return Prints the data frame with the specified column/row separators
 
-print.data.frame <- function(x, ...,
+.print.data.frame <- function(x, ...,
                              row.separator = NULL, col.separator = NULL,
                              sep.extend = FALSE, print.gap = 1,
                              digits = NULL, quote = FALSE, right = TRUE,
