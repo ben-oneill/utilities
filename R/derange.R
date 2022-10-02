@@ -3,7 +3,7 @@
 #' \code{derange} returns one or more pseudo-random derangements of the input vector
 #'
 #' A "derangement" is a permutation with no element mapped to itself (i.e., no fixed points).  This function
-#' generates pseudo-random derangement of the input vector.  The input vector. for the function should be
+#' generates pseudo-random derangement of the input vector.  The input vector for the function should be
 #' either numeric, integer or character type.  The function will generate the desired number of derangements
 #' taken over the input vector.  For a single derangement the output is a vector and for multiple derangements
 #' the output is a matrix with each row representing one derangement.
