@@ -9,7 +9,7 @@
 #' the output is a matrix with each row representing one derangement.
 #'
 #' @usage \code{derange(set, size = 1)}
-#' @param set A vector of elements to derange (ust have at least two elements to derange)
+#' @param set A vector of elements to derange (must have at least two elements to derange)
 #' @param size A non-negative integer specifying the number of derangements to generate
 #' @return A vector/matrix of derangements of the input set
 
@@ -18,7 +18,7 @@ derange <- function(set, size = 1) {
   #Check input set
   if (!is.vector(set))                    stop('Error: Input set should be a vector')
   n <- length(set)
-  if (length(set) < 2)                    stop('Error: Input set must have at least two elements')
+  if (n < 2)                              stop('Error: Input set must have at least two elements')
   TYPE <- class(set)
   if (!(('numeric' %in% TYPE)|('integer' %in% TYPE)|('character' %in% TYPE))) {
                                           stop('Error: Input set should be a numeric, integer or character vector') }
