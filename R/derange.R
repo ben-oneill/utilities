@@ -4,29 +4,29 @@
 #' \code{derange.int} returns one or more pseudo-random derangements of the values 1,...,n
 #'
 #' A "derangement" is a permutation with no element mapped to itself (i.e., no fixed points) and a "generalised
-#' derangement" is a permutation with a specified number of fixed points.  The present funciton generates pseudo-
+#' derangement" is a permutation with a specified number of fixed points.  The present function generates pseudo-
 #' random derangements or generalised derangements of the input vector.  The input vector for the function should
 #' be either numeric, integer or character type.  The function will generate the desired number of derangements
 #' taken over the input vector.  For a single derangement the output is a vector and for multiple derangements
 #' the output is a matrix with each row representing one derangement.
 #'
-#' @usage \code{derange(set, size = 1, fixed.points = 0)}
+#' @usage \code{derange(x, size = 1, fixed.points = 0)}
 #' @usage \code{derange.int(n, size = 1, fixed.points = 0)}
 #' @param n Number of elements to derange (must be at least two)
-#' @param set A vector of elements to derange (must have at least two elements to derange)
+#' @param x A vector of elements to derange (must have at least two elements to derange)
 #' @param size A non-negative integer specifying the number of derangements to generate
 #' @param fixed.points Number of fixed points for a generalised derangement
 #' @return A vector/matrix of derangements
 
-derange <- function(set, size = 1, fixed.points = 0) {
+derange <- function(x, size = 1, fixed.points = 0) {
 
-  #Check input set
-  if (!is.vector(set))                          stop('Error: Input set should be a vector')
-  n <- length(set)
-  if (length(set) < 2)                          stop('Error: Input set must have at least two elements')
-  TYPE <- class(set)
+  #Check input x
+  if (!is.vector(x))                            stop('Error: Input x should be a vector')
+  n <- length(x)
+  if (length(x) < 2)                            stop('Error: Input x must have at least two elements')
+  TYPE <- class(x)
   if (!(('numeric' %in% TYPE)|('integer' %in% TYPE)|('character' %in% TYPE))) {
-                                                stop('Error: Input set should be a numeric, integer or character vector') }
+                                                stop('Error: Input x should be a numeric, integer or character vector') }
 
   #Check input size
   if (!is.vector(size))                         stop('Error: Input size should be a numeric value')
@@ -48,13 +48,12 @@ derange <- function(set, size = 1, fixed.points = 0) {
       if (!(FIXED[k] %in% 0:n)|(FIXED[k] == n-1))  stop(paste0('Error: Element ', k,' of input fixed.points is not a possible value')) } }
 
   #Determine type of input set and generate output
-  TYPE <- class(set)
   if (('numeric' %in% TYPE)|('integer' %in% TYPE)) {
     OUT <- matrix(0,  nrow = size, ncol = n)
   } else {
     OUT <- matrix('', nrow = size, ncol = n) }
   rownames(OUT) <- sprintf('D[%s]', 1:size)
-  colnames(OUT) <- set[1:n]
+  colnames(OUT) <- x[1:n]
 
   #Generate generalised derangements
   for (k in 1:size) {
@@ -63,7 +62,7 @@ derange <- function(set, size = 1, fixed.points = 0) {
     FF <- FIXED[k]
     if (FF > 0) {
       FIXED.VALS <- sort(sample.int(n, size = FF, replace = FALSE))
-      OUT[k, FIXED.VALS] <- set[FIXED.VALS] }
+      OUT[k, FIXED.VALS] <- x[FIXED.VALS] }
 
     #Generate derangement over remaining elements
     if (FF < n) {
@@ -73,12 +72,12 @@ derange <- function(set, size = 1, fixed.points = 0) {
       while (EXCESS.FIXED > 0) {
         i <- which(DERANGE == 1:nn)[1]
         j <- (1:nn)[-i][sample.int(nn-1, size = 1)]
-        SWAP    <- DERANGE[j]
+        SWAP       <- DERANGE[j]
         DERANGE[j] <- DERANGE[i]
         DERANGE[i] <- SWAP
         EXCESS.FIXED <- sum(DERANGE == 1:nn) }
-      if (FF == 0) { OUT[k, ] <- set[DERANGE]
-            } else { OUT[k, -FIXED.VALS] <- set[-FIXED.VALS][DERANGE] } } }
+      if (FF == 0) { OUT[k, ] <- x[DERANGE]
+            } else { OUT[k, -FIXED.VALS] <- x[-FIXED.VALS][DERANGE] } } }
 
   #Return output
   OUT[1:k, ] }
