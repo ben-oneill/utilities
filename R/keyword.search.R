@@ -112,15 +112,15 @@ print.keyword.search <- function(object, filter = TRUE) {
   #Print search table
   PRINT.DF1 <- cbind(OUT.SEARCH, col1 = '', col2 = '')
   PRINT.DF1 <- PRINT.DF1[, c(1, 5, 2, 6, 3, 4)]
-  PRINT.DF1[, 5] <- ifelse(OUT.SEARCH$case.sensitive, '',  '*')
-  PRINT.DF1[, 6] <- ifelse(OUT.SEARCH$whole.word,     '**', '')
+  PRINT.DF1[, 5] <- ifelse(OUT.SEARCH$case.sensitive, '', '*')
+  PRINT.DF1[, 6] <- ifelse(OUT.SEARCH$whole.word,     '^', '')
   names(PRINT.DF1) <- c('Keyword', '', 'Found', '', '', '')
   cat('--------------------------------------------------------\n')
   cat('  Keyword Table\n\n')
   print(PRINT.DF1, right = FALSE)
   cat('\n')
-  if (sum(!OUT.SEARCH$case.sensitive) > 0) { cat(' * Keyword is not case-sensitive\n') }
-  if (sum(OUT.SEARCH$whole.word) > 0)      { cat('** Keyword must be matched to whole word\n') }
+  if (sum(!OUT.SEARCH$case.sensitive) > 0) { cat('* Keyword is not case-sensitive\n') }
+  if (sum(OUT.SEARCH$whole.word) > 0)      { cat('^ Keyword must be matched to whole word\n') }
   if ((sum(!OUT.SEARCH$case.sensitive) > 0)|(sum(OUT.SEARCH$whole.word) > 0)) { cat('\n') }
 
   #Print results table
