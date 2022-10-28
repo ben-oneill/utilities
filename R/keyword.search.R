@@ -9,7 +9,7 @@
 #' are presented in a data-frame and matrix form showing the keywords found in each element of the character
 #' vector that was searched.
 #'
-#' @usage \code{keyword.search(x, keywords, case.sensitive = TRUE, whole.word = TRUE)}
+#' @usage \code{keyword.search(text, keywords, case.sensitive = TRUE, whole.word = TRUE)}
 #' @param text A character vector over which to search
 #' @param keywords A character vector containing keywords to search
 #' @param case.sensitive Logical value or vector; if \code{TRUE} the search is case-sensitive
@@ -137,5 +137,3 @@ print.keyword.search <- function(object, filter = TRUE) {
     cat('  Results Table\n\n')
     print(PRINT.DF2, right = FALSE) }
   cat('\n') }
-
-
