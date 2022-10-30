@@ -23,7 +23,7 @@
 #' @param no.digits A positive integer representing the number of leading digits for analysis
 #' @param simulate.p.value Logical value; if \code{TRUE} the p-value for the chi-squared test is simulated if any frequencies are below five
 #' @param simulations A positive integer representing the number of simulations for the p-value if simulation is used
-#' @return A list of class \code{benford} containing information on the analysis
+#' @return A list of class \code{benford} containing results of the analysis
 
 benford <- function(x, base = 10, no.digits = 1, simulate.p.value = TRUE, simulations = 10000) {
 
@@ -94,24 +94,25 @@ benford <- function(x, base = 10, no.digits = 1, simulate.p.value = TRUE, simula
     VALNUMBER[i] <- sum(WWW[i, ]*rev(BASE^(0:(DD-1)))) }
 
   #Generate Benford data
-  DATA2 <- data.frame(Digits = VALSTRING, Frequency = 0, Benford.Freq = 0, Proportion = 0, Benford.Probs = 0)
-  N <- sum(DATA$Values != 0)
+  FTABLE <- data.frame(Digits = VALSTRING, Frequency = 0, Benford.Freq = 0, Proportion = 0, Benford.Probs = 0)
+  N <- length(VALUES)
   for (i in 1:nrow(WWW)) {
-    DATA2$Frequency[i]     <- sum(DATA$Digit.String == VALSTRING[i])
-    DATA2$Benford.Probs[i] <- log((1+1/VALNUMBER[i]), base = BASE) }
-  DATA2$Proportion   <- DATA2$Frequency/N
-  DATA2$Benford.Freq <- N*DATA2$Benford.Probs
+    FTABLE$Frequency[i]     <- sum(DATA$Digit.String == VALSTRING[i])
+    FTABLE$Benford.Probs[i] <- log((1+1/VALNUMBER[i]), base = BASE) }
+  FTABLE$Proportion   <- FTABLE$Frequency/N
+  FTABLE$Benford.Freq <- N*FTABLE$Benford.Probs
+  FTABLE$Digits <- factor(FTABLE$Digits, levels = FTABLE$Digits)
 
   #Run chi-squared test
   SIMULATE <- FALSE
   if (simulate.p.value) {
   if (sum(DATA2$Frequency < 5) > 0) {
     SIMULATE <- TRUE } }
-  TEST <- suppressWarnings(chisq.test(x = DATA2$Frequency, p = DATA2$Benford.Probs,
+  TEST <- suppressWarnings(chisq.test(x = FTABLE$Frequency, p = FTABLE$Benford.Probs,
                                       simulate.p.value = SIMULATE, B = SIMS))
 
   #Generate output
-  OUT  <- list(base = BASE, no.digits = DD, data.table = DATA, frequency.table = DATA2,
+  OUT  <- list(base = BASE, no.digits = DD, data.table = DATA, frequency.table = FTABLE,
                chisq.stat = c(TEST$statistic), p.value = c(TEST$p.value),
                simulated = SIMULATE, simulations = simulations)
   class(OUT) <- 'benford'
@@ -123,7 +124,7 @@ benford <- function(x, base = 10, no.digits = 1, simulate.p.value = TRUE, simula
 print.benford <- function(object, max.rows = 20) {
 
   #Check object class
-  if (!('benford' %in% class(object)))       stop('Error: This print methd is for objects of class \'benford\'')
+  if (!('benford' %in% class(object)))       stop('Error: This print method is for objects of class \'benford\'')
 
   #Check max.rows
   if (!is.vector(max.rows))                  stop('Error: Input max.rows should be a vector')
@@ -151,7 +152,7 @@ print.benford <- function(object, max.rows = 20) {
     cat(paste0('Analysis of ', N, ' values using base = ', BASE, ' and digits = ', DD, '\n')) }
   cat('Null hypothesis: Digits follow Benford\'s distribution\n')
   cat(paste0('Chi-Sq statistic = ', format(round(STAT, 4), nsmall = 4),
-             ' (', nrow(FTABLE)-1, ' df), p-value = ', format(round(PVAL, 4), nsmall = 4), '\n'))
+             ' (', nrow(FTABLE)-1, ' DF), p-value = ', format(round(PVAL, 4), nsmall = 4), '\n'))
   if (SIMULATE) {
     cat('Test used simulated p-value with', format(SIMS, nsmall = 0, big.mark = ','), 'simulations\n')
   } else {
@@ -169,4 +170,75 @@ print.benford <- function(object, max.rows = 20) {
   cat('-------------------------------------------------------\n')
   print(FTABLE, row.names = FALSE, max = 5*max.rows)
   cat('\n') }
+
+
+plot.benford <- function(object, conf.level = 0.95,
+                         colour.density = 'blue', colour.bar = 'blue', colour.point = 'green') {
+
+  #Check object class
+  if (!('benford' %in% class(object)))       stop('Error: This plot method is for objects of class \'benford\'')
+
+  #Check if required packages are installed
+  GGPLOT2   <- requireNamespace('ggplot2',   quietly = TRUE)
+  SCALES    <- requireNamespace('scales',    quietly = TRUE)
+  GRID      <- requireNamespace('grid',      quietly = TRUE)
+  GRIDEXTRA <- requireNamespace('gridExtra', quietly = TRUE)
+  if (!GGPLOT2)    stop('Error: This plot method requires the ggplot2 package')
+  if (!SCALES)     stop('Error: This plot method requires the scales package')
+  if (!GRIDEXTRA)  stop('Error: This plot method requires the gridExtra package')
+  if (!GRID)       stop('Error: This plot method requires the grid package')
+
+  #Extract information
+  N        <- nrow(object$data.table)
+  DD       <- object$no.digits
+  BASE     <- object$base
+  STAT     <- object$chisq.stat
+  PVAL     <- object$p.value
+  DATA     <- object$data.table
+  FTABLE   <- object$frequency.table
+  SIMULATE <- object$simulated
+  SIMS     <- object$simulations
+
+  #Add bound for error bars
+  FTABLE$Lower <- 0
+  FTABLE$Upper <- 1
+  for (i in 1:nrow(FTABLE)) {
+    CONF.INT <- stat.extend::CONF.prop(alpha = 1-conf.level, n = N, sample.prop = FTABLE$Proportion[i])
+    FTABLE$Lower[i] <- N*min(CONF.INT)
+    FTABLE$Upper[i] <- N*max(CONF.INT) }
+
+  #Set plot title and theme
+  TITLE <- paste0('Benford Plot (Base ', BASE, ')')
+  SUBTITLE <- paste0('Chi-Sq statistic = ', format(round(STAT, 4), nsmall = 4), ' (', nrow(FTABLE)-1, ' DF), p-value = ', format(round(PVAL, 4), nsmall = 4), '\n',
+                     '(Points show expected frequency; Error bars show ',
+                     format(100*conf.level, nsmall = 0), '% confidence intervals)')
+  TITLE    <- grid::textGrob(TITLE,    gp = grid::gpar(fontsize = 14, fontface = 'bold'))
+  SUBTITLE <- grid::textGrob(SUBTITLE, gp = grid::gpar(fontsize = 10))
+  THEME <- ggplot2::theme(plot.title    = ggplot2::element_text(hjust = 0.5, size = 14, face = 'bold'),
+                          plot.subtitle = ggplot2::element_text(hjust = 0.5, face = 'bold'),
+                          axis.title.x  = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
+                          axis.title.y  = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)))
+
+  #Create figures
+  #UNRESOLVED PROBLEM: The labeling for the x-axis in Figure 2 is not working correctly
+  #Presently showing the label with the word "BASE" instead of the value BASE
+  LOGB <- function(x) { log(x, base = BASE) }
+  FIGURE1 <- ggplot2::ggplot(ggplot2::aes(x = log(10, base = BASE)*Values), data = DATA) +
+               ggplot2::geom_density(fill = colour.density) +
+               ggplot2::scale_x_log10(breaks = scales::trans_breaks("LOGB", function(x) BASE^x),
+                                      labels = scales::trans_format("LOGB", scales::math_format(BASE^.x))) +
+               THEME + ggplot2::xlab('Value') + ggplot2::ylab('Density')
+  FIGURE2 <- ggplot2::ggplot(ggplot2::aes(x = Digits, y = Frequency), data = FTABLE) +
+               ggplot2::geom_bar(stat = 'identity', fill = colour.bar, position = ggplot2::position_dodge()) +
+               ggplot2::geom_errorbar(ggplot2::aes(ymin = Lower, ymax = Upper), width = 0.2,
+                                      position = ggplot2::position_dodge(0.9)) +
+               ggplot2::geom_point(ggplot2::aes(y = Benford.Freq),
+                                   stat = 'identity', colour = colour.point, size = 3) +
+               THEME + ggplot2::xlab(ifelse(DD == 1, 'Leading Digit', 'Leading Digits')) + ggplot2::ylab('Frequency')
+  FIGURES <- gridExtra::grid.arrange(TITLE, SUBTITLE, FIGURE1, FIGURE2,
+                                     ncol = 1, heights = c(1.4, 2, 14, 14))
+
+
+  #Return plot
+  FIGURES }
 
