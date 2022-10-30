@@ -17,50 +17,64 @@
 #' table with the leading digits of each value, a frequency table showing the frequency and proportion of
 #' the leading digits, and the results of the chi-squared test against Benford's distribution.
 #'
-#' @usage \code{benford(x, base = 10, no.digits = 1)}
+#' @usage \code{benford(x, base = 10, no.digits = 1, simulate.p.value = TRUE, simulations = 10000)}
 #' @param x A vector of values to analyse
 #' @param base A positive integer representing the base for analysis
 #' @param no.digits A positive integer representing the number of leading digits for analysis
+#' @param simulate.p.value Logical value; if \code{TRUE} the p-value for the chi-squared test is simulated if any frequencies are below five
+#' @param simulations A positive integer representing the number of simulations for the p-value if simulation is used
 #' @return A list of class \code{benford} containing information on the analysis
 
-benford <- function(x, base = 10, no.digits = 1) {
+benford <- function(x, base = 10, no.digits = 1, simulate.p.value = TRUE, simulations = 10000) {
 
   #Check input x
-  if (!is.vector(x))             stop('Error: Input x should be a numeric vector')
-  if (!is.numeric(x))            stop('Error: Input x should be a numeric vector')
-  if (min(x) <= 0) {
-    warning('Benford analysis is designed for positive values\n---analysis is conducted on absolute values, ignoring zeros, to proceed')
-    XX <- abs(x) } else { XX <- x }
+  if (!is.vector(x))                     stop('Error: Input x should be a numeric vector')
+  if (!is.numeric(x))                    stop('Error: Input x should be a numeric vector')
+  if (min(x) <= 0)                       stop('Error: Input x should contain only positive values')
+  VALUES <- x
 
   #Check input base
-  if (!is.vector(base))             stop('Error: Input base should be an integer')
-  if (!is.numeric(base))            stop('Error: Input base should be an integer')
-  if (length(base) != 1)            stop('Error: Input base should be an integer')
+  if (!is.vector(base))                  stop('Error: Input base should be an integer')
+  if (!is.numeric(base))                 stop('Error: Input base should be an integer')
+  if (length(base) != 1)                 stop('Error: Input base should be an integer')
   BASE <- as.integer(base)
-  if (base != BASE)                 stop('Error: Input base should be an integer')
-  if (base < 2)                     stop('Error: Input base should be at least two')
+  if (base != BASE)                      stop('Error: Input base should be an integer')
+  if (base < 2)                          stop('Error: Input base should be at least two')
 
   #Check input no.digits
-  if (!is.vector(no.digits))        stop('Error: Input no.digits should be an integer')
-  if (!is.numeric(no.digits))       stop('Error: Input no.digits should be an integer')
-  if (length(no.digits) != 1)       stop('Error: Input no.digits should be an integer')
+  if (!is.vector(no.digits))             stop('Error: Input no.digits should be an integer')
+  if (!is.numeric(no.digits))            stop('Error: Input no.digits should be an integer')
+  if (length(no.digits) != 1)            stop('Error: Input no.digits should be an integer')
   DD <- as.integer(no.digits)
-  if (no.digits != DD)              stop('Error: Input no.digits should be an integer')
-  if (no.digits < 1)                stop('Error: Input no.digits should be at least one')
+  if (no.digits != DD)                   stop('Error: Input no.digits should be an integer')
+  if (no.digits < 1)                     stop('Error: Input no.digits should be at least one')
+
+  #Check input simulate.p.value
+  if (!is.vector(simulate.p.value))      stop('Error: Input simulate.p.value should be a logical value')
+  if (!is.logical(simulate.p.value))     stop('Error: Input simulate.p.value should be a logical value')
+  if (length(simulate.p.value) != 1)     stop('Error: Input simulate.p.value should be a single logical value')
+
+  #Check input simulations
+  if (!is.vector(simulations))           stop('Error: Input simulations should be an integer')
+  if (!is.numeric(simulations))          stop('Error: Input simulations should be an integer')
+  if (length(simulations) != 1)          stop('Error: Input simulations should be an integer')
+  SIMS <- as.integer(simulations)
+  if (simulations != SIMS)               stop('Error: Input simulations should be an integer')
+  if (simulations < 2000)                stop('Error: Input simulations should be at least 2000')
 
   #Generate Data Table
-  ORDER <- floor(log(XX, base = BASE))
-  DATA  <- data.frame(Values = XX, Order = ORDER)
+  ORDER <- floor(log(VALUES, base = BASE))
+  DATA  <- data.frame(Values = VALUES, Order = ORDER)
 
   #Add leading digits
-  DATA$Digit  <- ifelse(XX > 0, floor(XX/(BASE^(ORDER))), 0)
+  DATA$Digit  <- ifelse(VALUES > 0, floor(VALUES/(BASE^(ORDER))), 0)
   DIGIT.NAMES <- sprintf('Digit[%s]', 1:DD)
   names(DATA)[3] <- DIGIT.NAMES[1]
   if (DD > 1) {
   for (k in 2:DD) {
-    XX <- (XX - DATA[, 1+k]*(BASE^(ORDER)))
-    ORDER <- ORDER-1
-    DATA$new <- ifelse(XX > 0, floor(XX/(BASE^(ORDER))), 0)
+    VALUES   <- (VALUES - DATA[, 1+k]*(BASE^(ORDER)))
+    ORDER    <- ORDER-1
+    DATA$new <- ifelse(VALUES > 0, floor(VALUES/(BASE^(ORDER))), 0)
     names(DATA)[2+k] <- DIGIT.NAMES[k] } }
   DATA$Digit.String <- ''
   for (i in 1:nrow(DATA)) { DATA$Digit.String[i] <- paste0(DATA[i, 3:(2+DD)], collapse = '-') }
@@ -88,28 +102,46 @@ benford <- function(x, base = 10, no.digits = 1) {
   DATA2$Proportion   <- DATA2$Frequency/N
   DATA2$Benford.Freq <- N*DATA2$Benford.Probs
 
+  #Run chi-squared test
+  SIMULATE <- FALSE
+  if (simulate.p.value) {
+  if (sum(DATA2$Frequency < 5) > 0) {
+    SIMULATE <- TRUE } }
+  TEST <- suppressWarnings(chisq.test(x = DATA2$Frequency, p = DATA2$Benford.Probs,
+                                      simulate.p.value = SIMULATE, B = SIMS))
+
   #Generate output
-  TEST <- suppressWarnings(chisq.test(x = DATA2$Frequency, p = DATA2$Benford.Probs))
   OUT  <- list(base = BASE, no.digits = DD, data.table = DATA, frequency.table = DATA2,
-               chisq.stat = c(TEST$statistic), p.value = c(TEST$p.value))
+               chisq.stat = c(TEST$statistic), p.value = c(TEST$p.value),
+               simulated = SIMULATE, simulations = simulations)
   class(OUT) <- 'benford'
 
   #Return output
   OUT }
 
 
-print.benford <- function(object) {
+print.benford <- function(object, max.rows = 20) {
 
   #Check object class
   if (!('benford' %in% class(object)))       stop('Error: This print methd is for objects of class \'benford\'')
 
+  #Check max.rows
+  if (!is.vector(max.rows))                  stop('Error: Input max.rows should be a vector')
+  if (!is.numeric(max.rows))                 stop('Error: Input max.rows should be a numeric vector')
+  if (length(max.rows) != 1)                 stop('Error: Input max.rows should be a single integer value')
+  MAX <- as.integer(max.rows)
+  if (max.rows != MAX)                       stop('Error: Input max.rows should be an integer')
+  if (max.rows < 1)                          stop('Error: Input max.rows should be a positive integer')
+
   #Extract information
-  N      <- nrow(object$data.table)
-  DD     <- object$no.digits
-  BASE   <- object$base
-  STAT   <- object$chisq.stat
-  PVAL   <- object$p.value
-  FTABLE <- object$frequency.table
+  N        <- nrow(object$data.table)
+  DD       <- object$no.digits
+  BASE     <- object$base
+  STAT     <- object$chisq.stat
+  PVAL     <- object$p.value
+  FTABLE   <- object$frequency.table
+  SIMULATE <- object$simulated
+  SIMS     <- object$simulations
 
   #Print title
   cat('\n  Benford Analysis\n\n')
@@ -118,11 +150,23 @@ print.benford <- function(object) {
   } else {
     cat(paste0('Analysis of ', N, ' values using base = ', BASE, ' and digits = ', DD, '\n')) }
   cat('Null hypothesis: Digits follow Benford\'s distribution\n')
-  cat(paste0('Chi-squared statistic = ', format(round(STAT, 4), nsmall = 4),
-             ', p-value = ', format(round(PVAL, 4), nsmall = 4), '\n\n'))
+  cat(paste0('Chi-Sq statistic = ', format(round(STAT, 4), nsmall = 4),
+             ' (', nrow(FTABLE)-1, ' df), p-value = ', format(round(PVAL, 4), nsmall = 4), '\n'))
+  if (SIMULATE) {
+    cat('Test used simulated p-value with', format(SIMS, nsmall = 0, big.mark = ','), 'simulations\n')
+  } else {
+    cat('Test used chi-squared distribution to compute p-value\n')
+    SS <- sum(FTABLE$Frequency < 5)
+    if (SS == 1) {
+      cat(paste0('\n--- There was ', SS, ' frequency below five\n',
+                 '--- Consider switching to simulated p-value instead\n')) }
+    if (SS > 1) {
+      cat(paste0('\n--- There were ', SS, ' frequencies below five\n',
+                 '--- Consider switching to simulated p-value instead\n')) } }
+  cat('\n')
 
   #Print table
   cat('-------------------------------------------------------\n')
-  print(FTABLE, row.names = FALSE)
+  print(FTABLE, row.names = FALSE, max = 5*max.rows)
   cat('\n') }
 
