@@ -106,7 +106,7 @@ benford <- function(x, base = 10, no.digits = 1, simulate.p.value = TRUE, simula
   #Run chi-squared test
   SIMULATE <- FALSE
   if (simulate.p.value) {
-  if (sum(DATA2$Frequency < 5) > 0) {
+  if (sum(FTABLE$Frequency < 5) > 0) {
     SIMULATE <- TRUE } }
   TEST <- suppressWarnings(chisq.test(x = FTABLE$Frequency, p = FTABLE$Benford.Probs,
                                       simulate.p.value = SIMULATE, B = SIMS))
