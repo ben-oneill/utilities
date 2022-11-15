@@ -139,8 +139,11 @@ print.keyword.search <- function(object, filter = TRUE) {
   cat('\n') }
 
 
-plot.keyword.search <- function(object, subtitle = TRUE, show.text = TRUE, text.max = 20,
-                                point.size = 3, point.shape = 15, point.color = 'darkblue', point.colour = point.color) {
+plot.keyword.search <- function(object, subtitle = TRUE,
+                                show.text = TRUE, text.max = 20,
+                                show.keywords = TRUE, keyword.max = 14,
+                                point.size = 3, point.shape = 15,
+                                point.color = 'darkblue', point.colour = point.color) {
 
   #Check object class
   if (!('keyword.search' %in% class(object)))          stop('Error: This print method is for objects of class \'keyword.search\'')
@@ -167,6 +170,18 @@ plot.keyword.search <- function(object, subtitle = TRUE, show.text = TRUE, text.
   if (length(text.max) != 1)             stop('Error: Input text.max should be a single integer')
   if (text.max != as.integer(text.max))  stop('Error: Input text.max should be an integer')
   if (min(text.max) < 10)                stop('Error: Input text.max should be at least 10')
+
+  #Check input show.keywords
+  if (!is.vector(show.keywords))         stop('Error: Input show.keywords should be a vector')
+  if (!is.logical(show.keywords))        stop('Error: Input show.keywords should be a logical value')
+  if (length(show.keywords) != 1)        stop('Error: Input show.keywords should be a single logical value')
+
+  #Check input keyword.max
+  if (!is.vector(keyword.max))           stop('Error: Input keyword.max should be a vector')
+  if (!is.numeric(keyword.max))          stop('Error: Input keyword.max should be numeric')
+  if (length(keyword.max) != 1)          stop('Error: Input keyword.max should be a single integer')
+  if (keyword.max != as.integer(keyword.max))  stop('Error: Input keyword.max should be an integer')
+  if (min(keyword.max) <  4)             stop('Error: Input keyword.max should be at least 4')
 
   #Check input point.size
   if (!is.vector(point.size))            stop('Error: Input point.size should be a vector')
@@ -195,20 +210,28 @@ plot.keyword.search <- function(object, subtitle = TRUE, show.text = TRUE, text.
   KEYWORDS   <- OUT.SEARCH$Keyword
   CASE.SENS  <- OUT.SEARCH$case.sensitive
   WHOLE      <- OUT.SEARCH$whole.word
+  TEXT       <- OUT.RESULT$Text
   m <- nrow(OUT.SEARCH)
   n <- nrow(OUT.RESULT)
 
-  #Set keyword labels and text
-  KEYWORD_LABELS <- KEYWORDS
-  for (i in 1:length(KEYWORDS)) {
-    if (!WHOLE[i])     { KEYWORD_LABELS[i] <- paste0('*', KEYWORD_LABELS[i], '*') }
-    if (!CASE.SENS[i]) { KEYWORD_LABELS[i] <- paste0('[', KEYWORD_LABELS[i], ']') } }
+  #Set keyword labels
+  if (show.keywords) {
+    for (i in 1:length(KEYWORDS)) {
+      if (nchar(KEYWORDS[i]) > keyword.max) { KEYWORDS[i] <- paste0(substr(KEYWORDS[i], start = 1, stop = keyword.max), '...') } }
+      KEYWORD_LABELS <- KEYWORDS
+      for (i in 1:length(KEYWORDS)) {
+        if (!WHOLE[i])     { KEYWORD_LABELS[i] <- paste0('*', KEYWORD_LABELS[i], '*') }
+        if (!CASE.SENS[i]) { KEYWORD_LABELS[i] <- paste0('[', KEYWORD_LABELS[i], ']') } }
+    } else {
+    KEYWORD_LABELS <- rownames(OUT.SEARCH) }
+
+  #Set text labels
   if (show.text) {
-    TEXT <- OUT.RESULT$Text
     for (i in 1:length(TEXT)) {
       if (nchar(TEXT[i]) > text.max) { TEXT[i] <- paste0(substr(TEXT[i], start = 1, stop = text.max), '...') } }
+    TEXT_LABELS <- TEXT
   } else {
-    TEXT <- rownames(OUT.RESULT) }
+    TEXT_LABELS <- rownames(OUT.RESULT) }
 
   #Set subtitle and caption
   if (m == 1) {
@@ -242,7 +265,7 @@ plot.keyword.search <- function(object, subtitle = TRUE, show.text = TRUE, text.
                           panel.grid.major.x = ggplot2::element_blank())
 
   #Generate plot data
-  PLOTDATA <- data.frame(Text     = rep(TEXT, each = m),
+  PLOTDATA <- data.frame(Text     = rep(TEXT_LABELS, each = m),
                          Keyword  = rep(KEYWORD_LABELS, times = n),
                          Found    = c(t(OUT.FLAG)))
 
