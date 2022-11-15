@@ -233,8 +233,13 @@ plot.keyword.search <- function(object, subtitle = TRUE, show.text = TRUE, text.
                                                                 margin = ggplot2::margin(t = 0, r = 0, b = 6, l = 0)),
                           axis.title.x  = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
                           axis.title.y  = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
+                          axis.text.x   = ggplot2::element_text(face = 'bold'),
                           plot.caption  = ggplot2::element_text(size = 8, hjust = 1,
-                                                                margin = ggplot2::margin(t = 20, r = 0, b = 0, l = 0)))
+                                                                margin = ggplot2::margin(t = 20, r = 0, b = 0, l = 0)),
+                          axis.ticks    = ggplot2::element_blank(),
+                          panel.background = ggplot2::element_rect(fill = 'white'),
+                          panel.grid.major   = ggplot2::element_line(color = 'gray50', linetype = 'dotted', size = 0.5),
+                          panel.grid.major.x = ggplot2::element_blank())
 
   #Generate plot data
   PLOTDATA <- data.frame(Text     = rep(TEXT, each = m),
@@ -246,7 +251,6 @@ plot.keyword.search <- function(object, subtitle = TRUE, show.text = TRUE, text.
     ggplot2::geom_point(colour = point.colour, size = point.size, shape = point.shape) +
     ggplot2::scale_y_discrete(limits = rev) +
     ggplot2::scale_alpha_manual(values = c(0, 1), guide = 'none') +
-    ggthemes::theme_economist() +
     THEME +
     ggplot2::labs(title = 'Keyword Search') +
     { if (!is.null(CAPTION)) { ggplot2::labs(caption = CAPTION) } } +
