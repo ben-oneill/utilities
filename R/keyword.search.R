@@ -137,3 +137,121 @@ print.keyword.search <- function(object, filter = TRUE) {
     cat('  Results Table\n\n')
     print(PRINT.DF2, right = FALSE) }
   cat('\n') }
+
+
+plot.keyword.search <- function(object, subtitle = TRUE, show.text = TRUE, text.max = 20,
+                                point.size = 3, point.shape = 15, point.color = 'darkblue', point.colour = point.color) {
+
+  #Check object class
+  if (!('keyword.search' %in% class(object)))          stop('Error: This print method is for objects of class \'keyword.search\'')
+
+  #Check if required packages are installed
+  GGPLOT2   <- requireNamespace('ggplot2',  quietly = TRUE)
+  GGTHEMES  <- requireNamespace('ggthemes', quietly = TRUE)
+  if (!GGPLOT2)  { stop('Error: This plot method requires the ggplot2 package') }
+  if (!GGTHEMES) { stop('Error: This plot method requires the ggthemes package') }
+
+  #Check input subtitle
+  if (!is.vector(subtitle))              stop('Error: Input subtitle should be a vector')
+  if (!is.logical(subtitle))             stop('Error: Input subtitle should be a logical value')
+  if (length(subtitle) != 1)             stop('Error: Input subtitle should be a single logical value')
+
+  #Check input show.text
+  if (!is.vector(show.text))             stop('Error: Input show.text should be a vector')
+  if (!is.logical(show.text))            stop('Error: Input show.text should be a logical value')
+  if (length(show.text) != 1)            stop('Error: Input show.text should be a single logical value')
+
+  #Check input text.max
+  if (!is.vector(text.max))              stop('Error: Input text.max should be a vector')
+  if (!is.numeric(text.max))             stop('Error: Input text.max should be numeric')
+  if (length(text.max) != 1)             stop('Error: Input text.max should be a single integer')
+  if (text.max != as.integer(text.max))  stop('Error: Input text.max should be an integer')
+  if (min(text.max) < 10)                stop('Error: Input text.max should be at least 10')
+
+  #Check input point.size
+  if (!is.vector(point.size))            stop('Error: Input point.size should be a vector')
+  if (!is.numeric(point.size))           stop('Error: Input point.size should be numeric')
+  if (length(point.size) != 1)           stop('Error: Input point.size should be a single number')
+  if (min(point.size) <= 0)              stop('Error: Input point.size should be greater than zero')
+
+  #Check input point.shape
+  if (!is.vector(point.shape))           stop('Error: Input point.shape should be a vector')
+  if (!is.numeric(point.shape))          stop('Error: Input point.shape should be numeric')
+  if (length(point.shape) != 1)          stop('Error: Input point.shape should be a single number')
+  if (!(point.shape %in% 0:25))          stop('Error: Input point.shape should be greater than zero')
+
+  #Check input point.colour
+  if (!is.vector(point.colour))          stop('Error: Input point.colour should be a vector')
+  if (!is.character(point.colour))       stop('Error: Input point.colour should be numeric')
+  if (length(point.colour) != 1)         stop('Error: Input point.colour should be a single integer')
+  if (!(point.colour %in% colours()))    stop('Error: Input point.colour should be in \'colours()\'')
+
+  ##############################################################################################################
+
+  #Extract parameters
+  OUT.SEARCH <- object$search
+  OUT.RESULT <- object$result
+  OUT.FLAG   <- object$flag.matrix
+  KEYWORDS   <- OUT.SEARCH$Keyword
+  CASE.SENS  <- OUT.SEARCH$case.sensitive
+  WHOLE      <- OUT.SEARCH$whole.word
+  m <- nrow(OUT.SEARCH)
+  n <- nrow(OUT.RESULT)
+
+  #Set keyword labels and text
+  KEYWORD_LABELS <- KEYWORDS
+  for (i in 1:length(KEYWORDS)) {
+    if (!WHOLE[i])     { KEYWORD_LABELS[i] <- paste0('*', KEYWORD_LABELS[i], '*') }
+    if (!CASE.SENS[i]) { KEYWORD_LABELS[i] <- paste0('[', KEYWORD_LABELS[i], ']') } }
+  if (show.text) {
+    TEXT <- OUT.RESULT$Text
+    for (i in 1:length(TEXT)) {
+      if (nchar(TEXT[i]) > text.max) { TEXT[i] <- paste0(substr(TEXT[i], start = 1, stop = text.max), '...') } }
+  } else {
+    TEXT <- rownames(OUT.RESULT) }
+
+  #Set subtitle and caption
+  if (m == 1) {
+    if (n == 1) {
+      SUBTITLE <- paste0('Search of 1 keyword in 1 text')
+    } else {
+      SUBTITLE <- paste0('Search of 1 keyword in ', n, ' texts') }
+  } else {
+    if (n == 1) {
+      SUBTITLE <- paste0('Search of ', m, ' keywords in 1 text')
+    } else {
+      SUBTITLE <- paste0('Search of ', m, ' keywords in ', n, ' texts') } }
+  if (sum(!CASE.SENS) > 0) {
+    CAPTION <- '[Bracketed keywords are not case sensitive]'
+  } else {
+    CAPTION <- NULL }
+
+  #Set theme
+  THEME <- ggplot2::theme(plot.title    = ggplot2::element_text(hjust = 0.5, size = 14, face = 'bold',
+                                                                margin = ggplot2::margin(t = 0, r = 0, b = 10, l = 0)),
+                          plot.subtitle = ggplot2::element_text(hjust = 0.5,
+                                                                margin = ggplot2::margin(t = 0, r = 0, b = 6, l = 0)),
+                          axis.title.x  = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
+                          axis.title.y  = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
+                          plot.caption  = ggplot2::element_text(size = 8, hjust = 1,
+                                                                margin = ggplot2::margin(t = 20, r = 0, b = 0, l = 0)))
+
+  #Generate plot data
+  PLOTDATA <- data.frame(Text     = rep(TEXT, each = m),
+                         Keyword  = rep(KEYWORD_LABELS, times = n),
+                         Found    = c(t(OUT.FLAG)))
+
+  #Generate plot
+  FIGURE  <- ggplot2::ggplot(ggplot2::aes(x = Keyword, y = Text, alpha = Found), data = PLOTDATA) +
+    ggplot2::geom_point(colour = point.colour, size = point.size, shape = point.shape) +
+    ggplot2::scale_y_discrete(limits = rev) +
+    ggplot2::scale_alpha_manual(values = c(0, 1), guide = 'none') +
+    ggthemes::theme_economist() +
+    THEME +
+    ggplot2::labs(title = 'Keyword Search') +
+    { if (!is.null(CAPTION)) { ggplot2::labs(caption = CAPTION) } } +
+    { if (subtitle) { ggplot2::labs(subtitle = SUBTITLE) } } +
+    ggplot2::xlab(NULL) + ggplot2::ylab(NULL)
+
+  #Return plot
+  FIGURE }
