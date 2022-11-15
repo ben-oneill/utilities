@@ -17,15 +17,18 @@
 #' table with the leading digits of each value, a frequency table showing the frequency and proportion of
 #' the leading digits, and the results of the chi-squared test against Benford's distribution.
 #'
-#' @usage \code{benford(x, base = 10, no.digits = 1, simulate.p.value = TRUE, simulations = 10000)}
+#' @usage \code{benford(x, base = 10, no.digits = 1, conf.level = 0.95, remove.duplicates = FALSE, simulate.p.value = TRUE, simulations = 10000)}
 #' @param x A vector of values to analyse
 #' @param base A positive integer representing the base for analysis
 #' @param no.digits A positive integer representing the number of leading digits for analysis
+#' @param conf.level The confidence level for confidence intervals for the probability of leading digits
+#' @param remove.duplicates Logical; if \code{TRUE} then duplicate values are removed before testing
 #' @param simulate.p.value Logical value; if \code{TRUE} the p-value for the chi-squared test is simulated if any frequencies are below five
 #' @param simulations A positive integer representing the number of simulations for the p-value if simulation is used
 #' @return A list of class \code{benford} containing results of the analysis
 
-benford <- function(x, base = 10, no.digits = 1, conf.level = 0.95,
+benford <- function(x, base = 10, no.digits = 1,
+                    conf.level = 0.95, remove.duplicates = FALSE,
                     simulate.p.value = TRUE, simulations = 10000) {
 
   #Check input x
@@ -50,6 +53,18 @@ benford <- function(x, base = 10, no.digits = 1, conf.level = 0.95,
   if (no.digits != DD)                   stop('Error: Input no.digits should be an integer')
   if (no.digits < 1)                     stop('Error: Input no.digits should be at least one')
 
+  #Check input conf.level
+  if (!is.vector(conf.level))            stop('Error: Input conf.level should be a number')
+  if (!is.numeric(conf.level))           stop('Error: Input conf.level should be a number')
+  if (length(conf.level) != 1)           stop('Error: Input conf.level should be a single number')
+  if (min(conf.level) < 0)               stop('Error: Input conf.level should be between zero and one')
+  if (max(conf.level) > 1)               stop('Error: Input conf.level should be between zero and one')
+
+  #Check input remove.duplicates
+  if (!is.vector(remove.duplicates))     stop('Error: Input remove.duplicates should be a logical value')
+  if (!is.logical(remove.duplicates))    stop('Error: Input remove.duplicates should be a logical value')
+  if (length(remove.duplicates) != 1)    stop('Error: Input remove.duplicates should be a single logical value')
+
   #Check input simulate.p.value
   if (!is.vector(simulate.p.value))      stop('Error: Input simulate.p.value should be a logical value')
   if (!is.logical(simulate.p.value))     stop('Error: Input simulate.p.value should be a logical value')
@@ -67,22 +82,25 @@ benford <- function(x, base = 10, no.digits = 1, conf.level = 0.95,
   if (!requireNamespace('stat.extend', quietly = TRUE)) {
     stop('Error: This function requires the stat.extend package') }
 
+  #############################################################################################################
+
   #Generate Data Table
   ORDER <- floor(log(VALUES, base = BASE))
-  DATA  <- data.frame(Values = VALUES, Order = ORDER)
+  DATA  <- data.frame(Values = VALUES, Remove = FALSE, Base = BASE, Order = ORDER)
+  if (remove.duplicates) { DATA$Remove <- duplicated(VALUES) }
 
   #Add leading digits
   DATA$Digit  <- ifelse(VALUES > 0, floor(VALUES/(BASE^(ORDER))), 0)
-  DIGIT.NAMES <- sprintf('Digit[%s]', 1:DD)
-  names(DATA)[3] <- DIGIT.NAMES[1]
+  DIGIT.NAMES <- sprintf('D[%s]', 1:DD)
+  names(DATA)[5] <- DIGIT.NAMES[1]
   if (DD > 1) {
   for (k in 2:DD) {
-    VALUES   <- (VALUES - DATA[, 1+k]*(BASE^(ORDER)))
+    VALUES   <- (VALUES - DATA[, 3+k]*(BASE^(ORDER)))
     ORDER    <- ORDER-1
     DATA$new <- ifelse(VALUES > 0, floor(VALUES/(BASE^(ORDER))), 0)
-    names(DATA)[2+k] <- DIGIT.NAMES[k] } }
+    names(DATA)[4+k] <- DIGIT.NAMES[k] } }
   DATA$Digit.String <- ''
-  for (i in 1:nrow(DATA)) { DATA$Digit.String[i] <- paste0(DATA[i, 3:(2+DD)], collapse = '-') }
+  for (i in 1:nrow(DATA)) { DATA$Digit.String[i] <- paste0(DATA[i, 5:(4+DD)], collapse = '-') }
 
   #Generate digit combinations and labels
   VALS0 <- 0:(BASE-1)
@@ -102,9 +120,9 @@ benford <- function(x, base = 10, no.digits = 1, conf.level = 0.95,
   FTABLE <- data.frame(Digits = VALSTRING, Frequency = 0, Benford.Freq = 0,
                        Lower = 0, Upper = 1,
                        Proportion = 0, Benford.Probs = 0)
-  N <- length(VALUES)
+  N <- sum(!DATA$Remove)
   for (i in 1:nrow(WWW)) {
-    FTABLE$Frequency[i]     <- sum(DATA$Digit.String == VALSTRING[i])
+    FTABLE$Frequency[i]     <- sum(DATA$Digit.String[!DATA$Remove] == VALSTRING[i])
     FTABLE$Benford.Probs[i] <- log((1+1/VALNUMBER[i]), base = BASE) }
   FTABLE$Proportion   <- FTABLE$Frequency/N
   FTABLE$Benford.Freq <- N*FTABLE$Benford.Probs
@@ -128,10 +146,11 @@ benford <- function(x, base = 10, no.digits = 1, conf.level = 0.95,
                                       simulate.p.value = SIMULATE, B = SIMS))
 
   #Generate output
-  OUT  <- list(base = BASE, no.digits = DD,
+  OUT  <- list(parameters = list(base = BASE, no.digits = DD,
+                                 remove.duplicates = remove.duplicates, conf.level = conf.level),
                data.table = DATA, frequency.table = FTABLE,
-               chisq.stat = c(TEST$statistic), p.value = c(TEST$p.value), conf.level = conf.level,
-               simulated = SIMULATE, simulations = simulations)
+               test = list(chisq.stat = c(TEST$statistic), p.value = c(TEST$p.value),
+                           simulated = SIMULATE, simulations = simulations))
   class(OUT) <- 'benford'
 
   #Return output
@@ -152,14 +171,15 @@ print.benford <- function(object, max.rows = 20) {
   if (max.rows < 1)                          stop('Error: Input max.rows should be a positive integer')
 
   #Extract information
-  N        <- nrow(object$data.table)
-  DD       <- object$no.digits
-  BASE     <- object$base
-  STAT     <- object$chisq.stat
-  PVAL     <- object$p.value
+  N        <- sum(!object$data.table$Remove)
+  RD       <- object$parameters$remove.duplicates
+  DD       <- object$parameters$no.digits
+  BASE     <- object$parameters$base
+  STAT     <- object$test$chisq.stat
+  PVAL     <- object$test$p.value
+  SIMULATE <- object$test$simulated
+  SIMS     <- object$test$simulations
   FTABLE   <- object$frequency.table
-  SIMULATE <- object$simulated
-  SIMS     <- object$simulations
 
   #Print title
   cat('\n  Benford Analysis\n\n')
@@ -189,10 +209,19 @@ print.benford <- function(object, max.rows = 20) {
   cat('\n') }
 
 
-plot.benford <- function(object, colour.density = 'blue', colour.bar = 'blue', colour.point = 'green') {
+plot.benford <- function(object, conf.level = NULL,
+                         colour.density = 'blue', colour.bar = 'blue', colour.point = 'green') {
 
   #Check object class
   if (!('benford' %in% class(object)))       stop('Error: This plot method is for objects of class \'benford\'')
+
+  #Check conf.level
+  if (!is.null(conf.level)) {
+    if (!is.vector(conf.level))              stop('Error: Input conf.level should be NULL or a numeric value')
+    if (!is.numeric(conf.level))             stop('Error: Input conf.level should be NULL or a numeric value')
+    if (length(conf.level) != 1)             stop('Error: Input conf.level should be NULL or a single numeric value')
+    if (min(conf.level) <= 0)                stop('Error: Input conf.level should be between zero and one')
+    if (max(conf.level) >= 1)                stop('Error: Input conf.level should be between zero and one') }
 
   #Check if required packages are installed
   GGPLOT2   <- requireNamespace('ggplot2',   quietly = TRUE)
@@ -205,16 +234,30 @@ plot.benford <- function(object, colour.density = 'blue', colour.bar = 'blue', c
   if (!GRID)       stop('Error: This plot method requires the grid package')
 
   #Extract information
-  N        <- nrow(object$data.table)
-  DD       <- object$no.digits
-  BASE     <- object$base
-  STAT     <- object$chisq.stat
-  PVAL     <- object$p.value
+  N        <- sum(!object$data.table$Remove)
+  RD       <- object$parameters$remove.duplicates
+  DD       <- object$parameters$no.digits
+  BASE     <- object$parameters$base
+  CL       <- object$parameters$conf.level
+  STAT     <- object$test$chisq.stat
+  PVAL     <- object$test$p.value
+  SIMULATE <- object$test$simulated
+  SIMS     <- object$test$simulations
   DATA     <- object$data.table
   FTABLE   <- object$frequency.table
-  SIMULATE <- object$simulated
-  SIMS     <- object$simulations
-  CL       <- object$conf.level
+
+  #Recalculate confidence intervals (if conf.level is specified)
+  if (!is.null(conf.level)) {
+  if (conf.level != CL) {
+
+    #Remove previous confidence intervals and add new confidence intervals (using Wilson score method)
+    names(FTABLE)[4] <- paste0('Lower[', conf.level, ']')
+    names(FTABLE)[5] <- paste0('Upper[', conf.level, ']')
+    for (i in 1:nrow(FTABLE)) {
+      CONF.INT <- stat.extend::CONF.prop(alpha = 1-conf.level, n = N, sample.prop = FTABLE$Proportion[i])
+      FTABLE[i, 4] <- N*min(CONF.INT)
+      FTABLE[i, 5] <- N*max(CONF.INT) }
+    CL <- conf.level } }
 
   #Set plot title and theme
   TITLE <- paste0('Benford Plot')
@@ -244,10 +287,11 @@ plot.benford <- function(object, colour.density = 'blue', colour.bar = 'blue', c
   xxx <- seq(from = 1, to = (BASE-1)*BASE^(DD-1), by = BASE^(DD-1))
   LABEL.DIGITS <- rep('', nrow(FTABLE))
   LABEL.DIGITS[xxx] <- as.character(FTABLE[xxx, 1])
-  FIGURE1 <- ggplot2::ggplot(ggplot2::aes(x = Values), data = DATA) +
+  FIGURE1 <- ggplot2::ggplot(ggplot2::aes(x = Values), data = DATA[!DATA$Remove, ]) +
                ggplot2::geom_density(fill = colour.density) +
                ggplot2::scale_x_log10(breaks = scales::trans_breaks("LOGB", function(x) BASE^x),
-                                      labels = scales::trans_format("LOGB", scales::math_format(BASE^.x))) +
+                                    #  labels = scales::label_log(base = BASE)) +
+                                       labels = scales::trans_format("LOGB", scales::math_format(BASE^.x))) +
                THEME + ggplot2::xlab('Value') + ggplot2::ylab('Density')
   FIGURE2 <- ggplot2::ggplot(ggplot2::aes(x = Digits, y = Frequency), data = FTABLE) +
                ggplot2::geom_bar(stat = 'identity', fill = colour.bar, position = ggplot2::position_dodge()) +
@@ -263,4 +307,23 @@ plot.benford <- function(object, colour.density = 'blue', colour.bar = 'blue', c
 
   #Return plot
   FIGURES }
+
+
+benford.data <- function(object) {
+
+  #Check object class
+  if (!('benford' %in% class(object)))       stop('Error: This plot method is for objects of class \'benford\'')
+
+  #Extract information
+  DATA   <- object$data.table
+  REMOVE <- DATA$Remove
+  MM     <- ncol(DATA)
+  BASE   <- object$parameters$base
+
+  #Generate output
+  OUT <- DATA[!REMOVE, c(1, 3:(MM-1))]
+  attributes(OUT)$base <- BASE
+
+  #Return output
+  OUT }
 
