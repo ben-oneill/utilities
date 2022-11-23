@@ -31,7 +31,7 @@
 #' recommending that they change the minimum/maximum representable numbers in the machine.  It is strongly
 #' recommended that you do not rely on any analysis that gives either of these warnings.
 #'
-#' @usage \code{benford(x, base = 10, no.digits = 1, conf.level = 0.95, remove.duplicates = FALSE, simulate.p.value = TRUE, simulations = 10000)}
+#' @usage \code{benford(x, base = 10, no.digits = 1, diffsort = 0, conf.level = 0.95, remove.duplicates = FALSE, simulate.p.value = TRUE, simulations = 10000)}
 #' @param x A vector of values to analyse
 #' @param base A positive integer representing the base for analysis
 #' @param no.digits A positive integer representing the number of leading digits for analysis
