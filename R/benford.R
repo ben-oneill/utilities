@@ -313,7 +313,7 @@ print.benford <- function(object, max.rows = 20) {
   } else {
     cat(paste0('Analysis of ', N, ' values using ', DD, ' digits with base ', BASE, '\n')) }
   cat('Null hypothesis: Digits follow Benford\'s distribution\n')
-  cat(paste0('Chi-Sq statistic = ', format(round(STAT, 4), nsmall = 4),
+  cat(paste0('Pearson statistic = ', format(round(STAT, 4), nsmall = 4),
              ' (', nrow(FTABLE)-1, ' DF), p-value = ', format(round(PVAL, 4), nsmall = 4), '\n'))
   if (SIMULATE) {
     cat('Test used simulated p-value with', format(SIMS, nsmall = 0, big.mark = ','), 'simulations\n')
