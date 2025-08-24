@@ -54,9 +54,9 @@ qs.sample <- function(n, Q, prob.arg = 'p', layers = NULL, ...) {
     if (!is.vector(layers))                  stop('Error: Input layers should be a vector')
     if (!is.numeric(layers))                 stop('Error: Input layers should be a numeric vector')
     LAYERS <- as.integer(layers)
-    if (any(LAYERS != layers))                   stop('Error: Input layers should contain integers')
-    if (min(LAYERS) < 0)                         stop('Error: Input layers should contain positive integers')
-    if (sum(LAYERS) != nn)                       stop('Error: Input layers should contain values that add up to input n')
+    if (any(LAYERS != layers))               stop('Error: Input layers should contain integers')
+    if (min(LAYERS) < 0)                     stop('Error: Input layers should contain positive integers')
+    if (sum(LAYERS) != nn)                   stop('Error: Input layers should contain values that add up to input n')
     LAYERS <- LAYERS[LAYERS > 0] }
   
   #Deal with special case where n = 0
@@ -83,8 +83,8 @@ qs.sample <- function(n, Q, prob.arg = 'p', layers = NULL, ...) {
     if(!is.vector(QQ))                        stop('Error: Input Q should give vector output')
     if(!is.numeric(QQ))                       stop('Error: Input Q should give numeric output')
     if (nnn > 1) {
-      for(r in 2:nnn) {
-        if (QQ[r] < QQ[r-1])                    stop('Error: Input Q should be non-decreasing') } }
+    for(r in 2:nnn) {
+      if (QQ[r] < QQ[r-1])                    stop('Error: Input Q should be non-decreasing') } }
     
     #Add sample to sample list
     SAMPLES[[m]] <- QQ }
