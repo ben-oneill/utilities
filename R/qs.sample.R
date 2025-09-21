@@ -8,9 +8,9 @@
 #' empirical quantiles adhere more closely to the true quantile function than for an IID sample.  Further details on
 #' this sampling method and its properties can be found in the following paper:
 #' 
-#' O'Neill, B. (2025) Quantile-stratified sampling and quantile-stratified importance sampling.
+#' O'Neill, B. (2025) One-dimensional quantile-stratified sampling and its applications in statistical simulations.
 #' 
-#' The user must specify the quantile function Q for the sampling distribution and the argument in this quantile function
+#' The user must specify the quantile function \code{Q} for the sampling distribution and the argument in this quantile function
 #' that represents the probability input.  For most quantile functions programmed in \code{R} the probability input has the 
 #' argument name \code{'p'} which is used as the default.  (Other argument names can be specified if the quantile function uses
 #' a different variable name.)  The user can also simulate using layered quantile-stratified sampling by giving a vector
